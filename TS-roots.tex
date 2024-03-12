@@ -1,6 +1,15 @@
+\RequirePackage[l2tabu, orthodox]{nag} % warns and hints on outdate commands, classes and packages.
+% `nag-l2tabu.cfg`: check obsolete packages and commands.
+% `nag-orthodox.cfg`: warn about usage that will mostly do unexpected things.
+
+%-----------------------------------------------------------------------------
+%	PACKAGES AND DOCUMENT CONFIGURATION
+%-----------------------------------------------------------------------------
+
+%% Document class
 \documentclass{article}
 
-% if you need to pass options to natbib, use, e.g.:
+% If you need to pass options to natbib, use, e.g.:
 \bibliographystyle{unsrtnat}
 \PassOptionsToPackage{numbers, compress}{natbib}
 % before loading neurips_2023
@@ -18,20 +27,11 @@
 % to avoid loading the natbib package, add option nonatbib:
 %    \usepackage[nonatbib]{neurips_2023}
 
-\usepackage[utf8]{inputenc} % allow utf-8 input
-\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
-\usepackage{hyperref}       % hyperlinks
-\usepackage{url}            % simple URL typesetting
-\usepackage{booktabs}       % professional-quality tables
-\usepackage{nicefrac}       % compact symbols for 1/2, etc.
-\usepackage{microtype}      % microtypography
-\usepackage{xcolor}         % colors
-
 % Math packages
 \usepackage{amsmath} % AMS math formulas
 \usepackage{amssymb} % AMS math symbols (\intercal)
 \usepackage{amsfonts} % AMS math fonts: Euler, bb, bf, frak; subscript sizes; Cyrillic
-\usepackage{amsopn}
+\usepackage{amsopn} % AMS math operators
 \DeclareMathOperator{\diag}{diag}
 % Use one of the following alternative script fonts:
 \usepackage{mathrsfs} % Raph Smith's Formal Script font in mathematics, provides `\mathscr`.
@@ -43,18 +43,47 @@
 % Custom math commands
 \renewcommand{\d}{\ensuremath{\mathop{}\!\mathrm{d}}} %differential operator: left space, upright.
 
+% Pseudo-code packages: `algorithmic`, `algorithmicx`, `algorithm2e`.
+% see: https://tex.stackexchange.com/q/229355/95794
+\usepackage{algorithm} % Float wrapper for algorithms
+% Layouts in `algorithmicx`: `algpseudocode`, `algpascal`, `algc`
+\usepackage{algpseudocode} % default layout
+% \usepackage{algpascal}     % Pascal layout
+% \usepackage{algc}          % C layout
+\algnewcommand\algorithmicinput{\textbf{Input:}}
+\algnewcommand\algorithmicoutput{\textbf{Output:}}
+\algnewcommand\algorithmicnote{\textbf{Note:}}
+\algnewcommand\Input{\item[\algorithmicinput]}%
+\algnewcommand\Output{\item[\algorithmicoutput]}%
+\algnewcommand\Note{\item[\algorithmicnote]}%
+\def\NoNumber#1{{\def\alglinenumber##1{}\State #1}\addtocounter{ALG@line}{-1}}
+
+%% Tables
+\usepackage{threeparttable} %
+\usepackage{booktabs}       % professional-quality tables
+% \usepackage[skip=0.5\baselineskip]{caption} % Less space blow caption. (Does not work with SIAM)
+
 %% Graphics packages
 \usepackage{graphicx} % `graphicx.sty`
 
-% Crossreferencing
+% Hypertext marks (back-reference is also desirable.)
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{xcolor}         % colors
+
+%% Text packages
+\usepackage{microtype} % Microtypography, reduce large interword spaces
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
 \usepackage[strings]{underscore} % Allow underscore, e.g. in DOIs.
 \usepackage[strict=true]{csquotes} % Context sensitive quotation
-% Add a serial/Oxford comma by default.
-\usepackage{cleveref}           % must be loaded after `hyperref`
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{cleveref}       % must be loaded after `hyperref`
+\newcommand{\creflastconjunction}{, and~} % Add a serial/Oxford comma by default.
 %\crefname{figure}{Fig.}{Figs.} %capitalize and shorten \cref figure labels.
 %\Crefname{figure}{Figure}{Figures} %capitalize \Cref figure labels.
 
-% Text styles
+% Author comments
 \newcommand{\tmp}[1]{\textcolor{white!40!black}{#1}} %temporary text.
 \newcommand{\jnk}[1]{\textcolor{white!90!black}{#1}} %junk placeholder text.
 \newcommand{\cmtR}[1]{\textcolor{red!50!black}{(Ruda: #1)}} %comment by Ruda.
@@ -113,7 +142,6 @@
 
 
 \begin{abstract}
-  TBD.
 \end{abstract}
 
 \textcolor{red}{TODO:
@@ -200,84 +228,82 @@ eigenfunctions of the SE kernel, with respect to the standard Gaussian
 measure, are Hermite polynomials weighted by a common Gaussian function,
 see Supplemental Materials.
 
-Our main algorithm is outlined in Alg 1.
+Our main algorithm is outlined in \cref{alg:TS-roots}.
 
-Algorithm 1: \texttt{TS-roots}: Global optimization of a separable
-posterior Thompson sample via rootfinding.
+% Algorithm: TS-roots
+\alglanguage{pseudocode}
+\begin{algorithm}[h]
+  \caption{\texttt{TS-roots}: Global optimization of a separable % posterior
+    Thompson sample via rootfinding.}
+  \label{alg:TS-roots}
+  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+    \Input eigenpairs
+    $\mathcal{S} = \{(\lambda_{i,j}, \phi_{i,j}(x_i) = p_{i,j}(x_i) \exp(q_i(x_i)))\}_{i \in d}^{j \in N_i}$,
+    dataset $\mathcal{D}$,
+    \edit{stopping criterion $\delta$}
+    \State sample prior weights: $\mathbf{w} = (w_{i,j})_{i \in d}^{j \in N_i}$,
+    $w_{i,j} \overset{\text{iid}}{\sim} \mathcal{N}0, 1)$.
+    \State find minimum-change solution to data constraints:
+    $\mathbf{w} \gets \texttt{newton}(\mathbf{w}, \mathcal{S}, \mathcal{D}, \edit{\delta})$
+    \State univariate global rootfinding: $\{x_{i,k}\}_{k=1}^{r_i} \gets \mathrm{roots}(p_i(x_i))$,
+    $i \in \{1, \cdots, d\}$, where \newline
+    $p_i(x_i) = \sum_{j=0}^{N_i - 1} w_{i,j} \sqrt{\lambda_{i,j}} (p_{i,j}(x_i) q'_i(x_i) + p'_{i,j}(x_i))$
+    \State evaluate $\{f_{i,k} = f_i(x_{i,k}; \mathbf{w}_i)\}_{i \in d}^{k \in r_i}$, where
+    $f_i(x_i; \mathbf{w}_i) = \sum_{j=0}^{N_i - 1} w_{i,j} \sqrt{\lambda_{i,j}} \phi_{i,j}(x_i)$
+    \State $(\mathbf{x}^\bot, \mathbf{x}^\top, f^\bot, f^\top) \gets
+    \mathrm{sepopt}(x_{i,k}, f_{i,k})_{i \in d}^{k \in r_i}$
+    \Output $\mathbf{x}^\bot$
+    % \Note 
+  \end{algorithmic}
+\end{algorithm}
 
-\begin{itemize}
-\item
-  input: eigenpairs
-  $\mathcal{S} = \{(\lambda_{i,j}, \phi_{i,j}(x_i) = p_{i,j}(x_i) \exp(q_i(x_i)))\}_{i \in d}^{j \in N_i}$,
-  dataset $\mathcal{D}$
-\end{itemize}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  sample prior weights:
-  $\mathbf{w} = (w_{i,j})_{i \in d}^{j \in N_i}$,
-  $w_{i,j} \overset{\text{iid}}{\sim} N(0, 1)$.
-\item
-  find minimum-change solution to data constraints:
-  $\mathbf{w} \gets \mathrm{newton}(\mathbf{w}, \mathcal{S}, \mathcal{D})$
-\item
-  univariate global rootfinding:
-  $\{x_{i,k}\}_{k=1}^{r_i} \gets \mathrm{roots}(p_i(x_i))$,
-  $i \in \{1, \cdots, d\}$, where
-  $p_i(x_i) = \sum_{j=0}^{N_i - 1} w_{i,j} \sqrt{\lambda_{i,j}} (p_{i,j}(x_i) q'_i(x_i) + p'_{i,j}(x_i))$
-\item
-  evaluate
-  $\{f_{i,k} = f_i(x_{i,k}; \mathbf{w}_i)\}_{i \in d}^{k \in r_i}$,
-  where
-  $f_i(x_i; \mathbf{w}_i) = \sum_{j=0}^{N_i - 1} w_{i,j} \sqrt{\lambda_{i,j}} \phi_{i,j}(x_i)$
-\item
-  $(\mathbf{x}^\bot, \mathbf{x}^\top, f^\bot, f^\top) \gets \mathrm{sepopt}(x_{i,k}, f_{i,k})_{i \in d}^{k \in r_i}$
-\end{enumerate}
-
-\begin{itemize}
-
-\item
-  return $\mathbf{x}^\bot$
-\end{itemize}
-
-NOTE: Alg 2 is a fast approximate approach to sampling the posterior
+NOTE: \Cref{alg:newton} is a fast approximate approach to sampling the posterior
 weights $\mathbf{w} | \mathcal{D}$. Considering that Thompson sampling
 is a heuristic approach to balancing the exploitation--exploration
 trade-off in BO, it is unnecessary to sample the posterior exactly. If
 exact sampling or a truly Bayesian approach is desirable, one may use a
 Gibbs sampler instead. \cmtR{Consult Yabo.}
 
-Algorithm 2: \texttt{newton}: Approximate spectral sampling of a
-separable posterior stochastic process.
+% Algorithm: newton
+\alglanguage{pseudocode}
+\begin{algorithm}[h]
+  \caption{\texttt{newton}: Approximate spectral sampling
+    of a separable posterior stochastic process.}
+  \label{alg:newton}
+  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+    \Input prior weights: $\mathbf{w}$, eigenpairs $\mathcal{S}$,
+    dataset $\mathcal{D}$, stopping criterion $\delta$
+    \State $\mathbf{f} \gets (f(\mathbf{x}^k; \mathbf{w}))_{k=1}^n$, where
+    $f(\mathbf{x}; \mathbf{w}) = \prod_{i=1}^d f_i(x_i; \mathbf{w}_i)$
+    \While{$|\mathbf{y} - \mathbf{f}| < \delta$}
+      \State $\mathbf{J} \gets (\nabla_{\mathbf{w}} f(\mathbf{x}^k; \mathbf{w}))_{k \in n}
+      \in \mathbb{R}^{n \times N}$, where $J_{k,(j,i)} =
+      {f(\mathbf{x}^k; \mathbf{w})} \sqrt{\lambda_{i,j}} \phi_{i,j}(x_i^k) / {f_i(x_i^k; \mathbf{w}_i)}$
+      \State $\mathbf{w} \gets \mathbf{w} - \mathbf{J}^\dagger (\mathbf{f} - \mathbf{y})$
+      \State $\mathbf{f} \gets (f(\mathbf{x}^k; \mathbf{w}))_{k=1}^n$
+    \EndWhile
+    \Output $\mathbf{w}$
+  \end{algorithmic}
+\end{algorithm}
 
-\begin{itemize}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.75\linewidth]{img/projection.pdf}
+  \caption{Spectral sampling for the posterior process.
+    (a) Roots of the linear equations $\mathbf{f}(\mathbf{w}) := \mathbf{A} \mathbf{w} = \mathbf{y}$
+    form an affine subspace $\mathbf{w}_\star + \ker(\mathbf{A})$,
+    and the posterior distribution is equivalent to the orthogonal projection onto the subspace.
+    (b) Roots of the nonlinear equations $\mathbf{f}_{\mathrm{sep}}(\mathbf{w}) :=
+    \odot_{i=1}^d \mathbf{A}_i \mathbf{w}_i = \mathbf{y}$, where $\odot$ denotes the Hadamard product,
+    form a nonlinear manifold $\mathbf{f}_{\mathrm{sep}}^{-1}(\mathbf{y})$.
+    The posterior distribution is the prior distribution restricted to the manifold,
+    and can be approximately sampled via projection by minimizing distance.}
+  \label{fig:projection}
+\end{figure}
 
-\item
-  input: prior weights: $\mathbf{w}$, eigenpairs $\mathcal{S}$,
-  dataset $\mathcal{D}$; stopping criteria $\delta$
-\item
-  $\mathbf{f} \gets (f(\mathbf{x}^k; \mathbf{w}))_{k=1}^n$, where
-  $f(\mathbf{x}; \mathbf{w}) = \prod_{i=1}^d f_i(x_i; \mathbf{w}_i)$
-\item
-  repeat until $|\mathbf{y} - \mathbf{f}| < \delta$:
-
-  \begin{itemize}
-  
-  \item
-    $\mathbf{J} \gets (\nabla_{\mathbf{w}} f(\mathbf{x}^k; \mathbf{w}))_{k \in n}  \in \mathbb{R}^{n \times N}$,
-    where\\
-    $J_{k,(j,i)} = {f(\mathbf{x}^k; \mathbf{w})}  \sqrt{\lambda_{i,j}} \phi_{i,j}(x_i^k) / {f_i(x_i^k; \mathbf{w}_i)}$
-  \item
-    $\mathbf{w} \gets \mathbf{w} - \mathbf{J}^\dagger (\mathbf{f} - \mathbf{y})$
-  \item
-    $\mathbf{f} \gets (f(\mathbf{x}^k; \mathbf{w}))_{k=1}^n$
-  \end{itemize}
-\item
-  return $\mathbf{w}$
-\end{itemize}
 
 The critical points of a separable multivariate function are exactly the
+The critical points of a \edit{completely multiplicatively} separable multivariate function are exactly the
 critical points of its univariate components, arbitrarily combined,
 except for when the function value is zero. We ignore the roots of the
 function as uninteresting for the optimization problem. Therefore, we
@@ -289,26 +315,23 @@ omitted for the moment.)
 Solving all roots of a univariate function can be done very efficiently
 via Chebyshev/Legendre polynomial approximation and solving an
 eigenvalue problem, see e.g., ATAP \cite{Trefethen2019}. The procedure
-is outlined in Alg 3.
+is outlined in \cref{alg:roots}.
 
-Algorithm 3: \texttt{roots}: Univariate global rootfinding on an
-interval.
-
-\begin{itemize}
-
-\item
-  input: polynomial $p(x)$ of degree $n$ (or any function $f(x)$)
-\item
-  transform into (or approximate in) a Chebyshev/Legendre polynomial
-  basis $p(x) = \sum_{k=0}^n a_k T_k(x)$, e.g., via Chebyshev/Legendre
-  interpolation.
-\item
-  solve all the eigenvalues of the colleague/comrade matrix: the
-  colleague matrix can be written as
-  $C = [\mathrm{band}((-1, 1), 1) + [1]_{1,2} - (a_{-n} / a_n)_{n,}] / 2$
-\item
-  return all the real eigenvalues $\{x_i\}_{i=1}^r$ in the interval
-\end{itemize}
+% Algorithm: roots
+\alglanguage{pseudocode}
+\begin{algorithm}[h]
+  \caption{\texttt{roots}: Univariate global rootfinding on an interval.}
+  \label{alg:roots}
+  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+    \Input polynomial $p(x)$ of degree $n$ (or any function $f(x)$)
+    \State transform into (or approximate in) a Chebyshev/Legendre polynomial basis\newline
+    $p(x) = \sum_{k=0}^n a_k T_k(x)$, e.g., via Chebyshev/Legendre interpolation.
+    \State solve all the eigenvalues of the colleague/comrade matrix:\newline
+    the colleague matrix can be written as
+    $C = [\mathrm{band}((-1, 1), 1) + [1]_{1,2} - (a_{-n} / a_n)_{n,}] / 2$
+    \Output all the real eigenvalues $\{x_i\}_{i=1}^r$ in the interval
+  \end{algorithmic}
+\end{algorithm}
 
 NOTE: For a sample from a univariate GP with an SE kernel, generated by
 truncating the Wiener series to $N+1$ terms, its critical points are
@@ -320,67 +343,56 @@ have been implemented in the Chebfun package in MATLAB [Battles and
 Trefethen, 2005], which also implements Chebfun
 interpolation. Any software implementation in R or Python?
 
+NOTE: If we use Chebyshev/Legendre interpolation,
+then \cref{alg:roots} can be applied to any spectral representation of a stochastic process.
+For representations in the Fourier basis
+(e.g., Matern-like kernels and Bochner's representation of stationary kernels),
+evaluation of the posterior sample can be done efficiently using the fast Fourier transform,
+in $\mathcal{O}(N_i \log N_i)$ flops.
+
 \todo{TODO: fast evaluation of Hermite polynomial series; Chebyshev
 interpolation; global rootfinding of a Chebyshev polynomial.}
 
 Given all the critical points and values of the univariate components,
 computing the global optimal points and values of a separable function
 does not require computing all the combinations of the component
-critical values. An efficient approach is given in Alg 4. (Proof is
+critical values. An efficient approach is given in \cref{alg:sepopt}. (Proof is
 simple and we omit it here.)
 
-Algorithm 4: \texttt{sepopt}: Global optimization of a separable
-function given component critical points and values.
+% Algorithm: sepopt
+\alglanguage{pseudocode}
+\begin{algorithm}[h]
+  \caption{\texttt{sepopt}: Global optimization of a separable function.}
+  \label{alg:sepopt}
+  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+    \Input component critical points and values $(x_{i,j}, f_{i,j})_{i \in d}^{j \in r_i}$
+    \State $(i, j^\top_{\mathrm{abs}}) \gets \arg\max_{j \in r_i} |f_{i,j}|$, $i \in d$
+    \State $\mathbf{x}_{\mathrm{abs}}^\top \gets (x_{i, j^\top_{\mathrm{abs}}})_{i=1}^d$
+    \State $f_{\mathrm{abs}}^\top \gets \prod_{i=1}^d f_{i, j^\top_{\mathrm{abs}}}$
+    \State $r_{i,j} \gets f_{i,j} / f_{i, j^\top_{\mathrm{abs}}}$
+    \State $(i, j^\bot_{\mathrm{rel}}) \gets \arg\min_{j \in r_i} r_{i,j}, i \in d$
+    \If{$\min_{i \in d} r_{i, j^\bot_{\mathrm{rel}}} \ge 0$}
+    \State $\mathbf{x}_{\mathrm{alt}}^\bot \gets (x_{i, j^\bot_{\mathrm{rel}}})_{i=1}^d$
+    \State $f_{\mathrm{alt}}^\bot \gets \prod_{i=1}^d f_{i, j^\bot_{\mathrm{rel}}}$
+    \Else
+    \State $i' \gets \arg\min_{i \in d} r_{i, j^\bot_{\mathrm{rel}}}$
+    \State $\mathbf{x}_{\mathrm{alt}}^\bot \gets (x_{1, j^\top_{\mathrm{abs}}}, \cdots,
+    x_{i', j^\bot_{\mathrm{rel}}}, \cdots, x_{d, j^\top_{\mathrm{abs}}})$
+    \State $f_{\mathrm{alt}}^\bot \gets (\prod_{i \ne i'} f_{i, j^\top_{\mathrm{abs}}})
+    f_{i', j^\bot_{\mathrm{rel}}}$
+    \EndIf
+    \If{$f_{\mathrm{abs}}^\top > 0$}
+    \State \Return $(\mathbf{x}_{\mathrm{alt}}^\bot, \mathbf{x}_{\mathrm{abs}}^\top,
+    f_{\mathrm{alt}}^\bot, f_{\mathrm{abs}}^\top)$
+    \Else
+    \State \Return $(\mathbf{x}_{\mathrm{abs}}^\top, \mathbf{x}_{\mathrm{alt}}^\bot,
+    f_{\mathrm{abs}}^\top, f_{\mathrm{alt}}^\bot)$
+    \EndIf
+    \Note The output, understood as $(\mathbf{x}^\bot, \mathbf{x}^\top, f^\bot, f^\top)$,
+  are the global minimal and maximal points and the global minimum and maximum, respectively.
+  \end{algorithmic}
+\end{algorithm}
 
-\begin{itemize}
-
-\item
-  input: $(x_{i,j}, f_{i,j})_{i \in d}^{j \in r_i}$
-\item
-  $(i, j^\top_{\mathrm{abs}}) \gets \arg\max_{j \in r_i} |f_{i,j}|$,
-  $i \in d$
-\item
-  $\mathbf{x}_{\mathrm{abs}}^\top \gets (x_{i, j^\top_{\mathrm{abs}}})_{i=1}^d$
-\item
-  $f_{\mathrm{abs}}^\top \gets \prod_{i=1}^d f_{i, j^\top_{\mathrm{abs}}}$
-\item
-  $r_{i,j} \gets f_{i,j} / f_{i, j^\top_{\mathrm{abs}}}$
-\item
-  $(i, j^\bot_{\mathrm{rel}}) \gets \arg\min_{j \in r_i} r_{i,j}, i \in d$
-\item
-  if $\min_{i \in d} r_{i, j^\bot_{\mathrm{rel}}} \ge 0$
-
-  \begin{itemize}
-  
-  \item
-    $\mathbf{x}_{\mathrm{alt}}^\bot \gets (x_{i, j^\bot_{\mathrm{rel}}})_{i=1}^d$
-  \item
-    $f_{\mathrm{alt}}^\bot \gets \prod_{i=1}^d f_{i, j^\bot_{\mathrm{rel}}}$
-  \end{itemize}
-\item
-  else
-
-  \begin{itemize}
-  
-  \item
-    $i' \gets \arg\min_{i \in d} r_{i, j^\bot_{\mathrm{rel}}}$
-  \item
-    $\mathbf{x}_{\mathrm{alt}}^\bot \gets (x_{1, j^\top_{\mathrm{abs}}}, \cdots,  x_{i', j^\bot_{\mathrm{rel}}}, \cdots, x_{d, j^\top_{\mathrm{abs}}})$
-  \item
-    $f_{\mathrm{alt}}^\bot \gets (\prod_{i \ne i'} f_{i, j^\top_{\mathrm{abs}}})  f_{i', j^\bot_{\mathrm{rel}}}$
-  \end{itemize}
-\item
-  if $f_{\mathrm{abs}}^\top > 0$ return
-  $(\mathbf{x}_{\mathrm{alt}}^\bot, \mathbf{x}_{\mathrm{abs}}^\top, f_{\mathrm{alt}}^\bot, f_{\mathrm{abs}}^\top)$
-\item
-  else return
-  $(\mathbf{x}_{\mathrm{abs}}^\top, \mathbf{x}_{\mathrm{alt}}^\bot, f_{\mathrm{abs}}^\top, f_{\mathrm{alt}}^\bot)$
-\item
-  The output, understood as
-  $(\mathbf{x}^\bot, \mathbf{x}^\top, f^\bot, f^\top)$, are the global
-  minimal and maximal points and the global minimum and maximum,
-  respectively.
-\end{itemize}
 
 \section{Experiments}
 
@@ -391,6 +403,8 @@ function given component critical points and values.
 
 \section{Supplementary Material}
 
+\subsection{Bayesian Optimization via Spectral Sampling}
+
 A general procedure for sequential optimization is given in Alg A.1; see
 \cite{Garnett2023} Alg 1.1. The initial dataset can either be empty or
 contain some pairs of inputs and observations; in the latter case we can
@@ -400,31 +414,22 @@ customized: the observation model $\mathrm{Observe}(\mathbf{x})$, the
 termination condition, and the optimization policy
 $\mathrm{Policy}(\mathcal{D})$.
 
-Algorithm A.1: Sequential optimization.
-
-\begin{itemize}
-
-\item
-  input: initial dataset $\mathcal{D}^0$
-\item
-  $k \gets 1$
-\item
-  repeat
-
-  \begin{itemize}
-  
-  \item
-    $\mathbf{x}^k \gets \mathrm{Policy}(\mathcal{D}^{k-1})$
-  \item
-    $y^k \gets \mathrm{Observe}(\mathbf{x}^k)$
-  \item
-    $\mathcal{D}^k \gets \mathcal{D}^{k-1} \cup \{(\mathbf{x}^k, y^k)\}$
-  \end{itemize}
-\item
-  until termination condition reached
-\item
-  return $\mathcal{D}$
-\end{itemize}
+% Algorithm: sequential optimization 
+\alglanguage{pseudocode}
+\begin{algorithm}[h]
+  \caption{Sequential optimization \cite{Garnett2023}.}
+  \label{alg:seqopt}
+  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+    \Input initial dataset $\mathcal{D}^0$
+    \State $k \gets 1$
+     \Repeat
+      \State $\mathbf{x}^k \gets \mathrm{Policy}(\mathcal{D}^{k-1})$
+      \State $y^k \gets \mathrm{Observe}(\mathbf{x}^k)$ 
+      \State $\mathcal{D}^k \gets \mathcal{D}^{k-1} \cup \{(\mathbf{x}^k, y^k)\}$
+    \Until{termination condition reached}
+    \Output  $\mathcal{D}$
+  \end{algorithmic}
+\end{algorithm}
 
 Bayesian optimization (BO) is can be seen as an optimization policy for
 sequential optimization; a formal procedure is given in Alg A.2. Three
@@ -441,44 +446,36 @@ that to simplify notation, we stated the global optimization problem of
 $\alpha(\mathbf{x})$ as minimization rather than maximization; the two
 problems are exactly the same with a change of sign to the objective.
 
-Algorithm A.2: Bayesian optimization policy.
-
-\begin{itemize}
-
-\item
-  choose a prior stochastic process $\widehat{f}^0$ for the objective
-  function $f$
-\item
-  at each stage $k = 1, 2, \cdots$
-
-  \begin{itemize}
-  
-  \item
-    input: current dataset $\mathcal{D}^{k-1}$
-  \item
-    determine posterior
+% Algorithm: Bayesian optimization policy
+\alglanguage{pseudocode}
+\begin{algorithm}[h]
+  \caption{Bayesian optimization policy.}
+  \label{alg:BOpolicy}
+  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+    \Input a prior stochastic process $\widehat{f}^0$ for the objective function $f$, current dataset $\mathcal{D}^{k-1}$
+    \State determine posterior
     $\widehat{f}^k := \widehat{f}^0 | \mathcal{D}^{k-1}$
-  \item
-    derive acquisition function $\alpha^k(\mathbf{x})$ from
+    \State derive acquisition function $\alpha^k(\mathbf{x})$ from
     $\widehat{f}^k$
-  \item
-    $\mathbf{x}^k \gets \arg\min_{\mathbf{x} \in \mathcal{X}} \alpha^k(\mathbf{x})$
-  \item
-    return $\mathbf{x}^k$
-  \end{itemize}
-\end{itemize}
+    \State $\mathbf{x}^k \gets \arg\min_{\mathbf{x} \in \mathcal{X}} \alpha^k(\mathbf{x})$
+    \State \Return $\mathbf{x}^k$
+  \end{algorithmic}
+\end{algorithm}
 
 When applied to BO, Thompson sampling (TS) generates a random
 acquisition function simply by sampling the posterior model. The
 procedure is formalized in Alg A.3.
 
-Algorithm A.3: Thompson sampling acquisition function.
-
-\begin{itemize}
-
-\item
-  $\alpha^k(\mathbf{x}) \sim \widehat{f}^k$
-\end{itemize}
+% Algorithm: Bayesian optimization policy
+\alglanguage{pseudocode}
+\begin{algorithm}[h]
+  \caption{Thompson sampling acquisition function.}
+  \label{alg:TS}
+  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+    \Input posterior $\widehat{f}^k$
+    \State \Return $\alpha^k(\mathbf{x}) \sim \widehat{f}^k$
+  \end{algorithmic}
+\end{algorithm}
 
 We can sample a Gaussian process $\mathcal{GP}(m, \kappa)$
 efficiently, if we have a spectral representation of the covariance
@@ -502,26 +499,24 @@ have a spectral representation known in analytical form. Suppose this is
 the case, we can sample the GP prior as a truncated Wiener series, see
 Alg A.4.
 
-Algorithm A.4: Spectral sampling of Gaussian process prior.
-
-\begin{itemize}
-
-\item
-  input: mean function $m(\mathbf{x})$, eigenpairs
+% Algorithm: unconditional spectral sampling
+\alglanguage{pseudocode}
+\begin{algorithm}[h]
+  \caption{Spectral sampling of Gaussian process prior.}
+  \label{alg:sam_priorGP}
+  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+    \Input mean function $m(\mathbf{x})$, eigenpairs
   $\{(\lambda_i, \phi_i(\mathbf{x}))\}_{i=0}^{N-1}$
-\item
-  sample standard Gaussian random variables
-  $w_i \overset{\text{iid}}{\sim} N(0,1)$
-\item
-  return
-  $f(\mathbf{x}) \gets m(\mathbf{x}) + \sum_{i=0}^{N-1} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$
-\end{itemize}
+    \State $w_i \overset{\text{iid}}{\sim} \mathcal{N}(0,1)$
+    \State \Return $f(\mathbf{x}) \gets m(\mathbf{x}) + \sum_{i=0}^{N-1} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$
+  \end{algorithmic}
+\end{algorithm}
 
 To simplify notation, we assume that the GP prior mean function
 $m(\mathbf{x}) = 0$. If the observation model
 $\mathrm{Observe}(\mathbf{x})$ can be written as
 $y^i = f(\mathbf{x}^i) + z^i$ where
-$z^i \overset{\text{iid}}{\sim} N(0, \varepsilon^2)$, then the
+$z^i \overset{\text{iid}}{\sim} \mathcal{N}(0, \varepsilon^2)$, then the
 posterior given dataset
 $\mathcal{D} = \{(\mathbf{x}^i, y^i)\}_{i=1}^n$ is also a Gaussian
 process
@@ -538,7 +533,7 @@ $\mathbf{k}(\mathbf{x}) = (\kappa(\mathbf{x}, \mathbf{x}^i))_{i=1}^n$.
 The GP posterior can be sampled as an updated truncated Wiener series
 $\widehat{f}^0 | \mathcal{D} = \sum_{k=0}^{N-1} \widetilde{w}_k \sqrt{\lambda_k} \phi_k(\mathbf{x})$,
 where
-$\widetilde{\mathbf{w}} \sim N_N(\mathbf{w}_\star, \boldsymbol{\Sigma}_\star)$.
+$\widetilde{\mathbf{w}} \sim \mathcal{N}_N(\mathbf{w}_\star, \boldsymbol{\Sigma}_\star)$.
 Let $\boldsymbol{\Phi} = [\phi_j(\mathbf{x}^i)]_{i \in n}^{j \in N}$,
 $\boldsymbol{\Lambda} = \mathrm{diag}(\lambda_i)_{i \in N}$ and
 $\mathbf{A} = \boldsymbol{\Phi} \boldsymbol{\Lambda}^{1/2}$. Assume
@@ -573,37 +568,44 @@ and therefore
 $\widetilde{\mathbf{w}} \sim \mathbf{w}|_{\mathcal{S}} \sim \mathbf{P}_{\mathcal{S}} \mathbf{w}$.
 This allows us to sample the GP posterior via projection, see Alg A.5.
 
-Algorithm A.5: Spectral sampling of Gaussian process posterior.
-
-\begin{itemize}
-
-\item
-  input: eigenpairs $\{(\lambda_i, \phi_i(\mathbf{x}))\}_{i=0}^{N-1}$,
+% Algorithm: conditional spectral sampling
+\alglanguage{pseudocode}
+\begin{algorithm}[h]
+  \caption{Spectral sampling of Gaussian process posterior.}
+  \label{alg:sam_postGP}
+  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+    \Input eigenpairs $\{(\lambda_i, \phi_i(\mathbf{x}))\}_{i=0}^{N-1}$,
   dataset $\mathcal{D}$
-\item
-  sample $\mathbf{w} \gets (w_i)_{i=0}^{N-1}$, where
-  $w_i \overset{\text{iid}}{\sim} N(0,1)$
-\item
-  construct coefficient matrix
-  $\mathbf{A} \gets [\lambda_j \phi_j(\mathbf{x}^i)]_{i \in n}^{j \in N}$
-\item
-  compute thin SVD
-  $\mathbf{A} = \mathbf{U} \mathbf{D} \mathbf{V}^\intercal$
-\item
-  compute
-  $\mathbf{w}_\star \gets \mathbf{V} \mathbf{D}^\dagger \mathbf{U}^\intercal \mathbf{y}$
-\item
-  compute
-  $\widetilde{\mathbf{w}} \gets \mathbf{w}_\star + \mathbf{w} - \mathbf{V} \mathbf{V}^\intercal \mathbf{w}$
-\item
-  return
-  $f(\mathbf{x}) \gets \sum_{i=0}^{N-1} \widetilde{w}_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$
-\end{itemize}
+    \State $\mathbf{w} \gets (w_i)_{i=0}^{N-1}$, where
+  $w_i \overset{\text{iid}}{\sim} \mathcal{N}(0,1)$
+    \State $\mathbf{A} \gets [\lambda_j \phi_j(\mathbf{x}^i)]_{i \in n}^{j \in N}$
+    \State $\mathbf{A} = \mathbf{U} \mathbf{D} \mathbf{V}^\intercal$ \Comment{thin SVD}
+    \State $\mathbf{w}_\star \gets \mathbf{V} \mathbf{D}^\dagger \mathbf{U}^\intercal \mathbf{y}$
+    \State $\widetilde{\mathbf{w}} \gets \mathbf{w}_\star + \mathbf{w} - \mathbf{V} \mathbf{V}^\intercal \mathbf{w}$
+    \State \Return $f(\mathbf{x}) \gets \sum_{i=0}^{N-1} \widetilde{w}_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$
+  \end{algorithmic}
+\end{algorithm}
 
-\todo{Spectrum of the SE kernel. (TODO)}
+\subsection{Spectrum of the SE Kernel}
+
+The univariate squared exponential (SE) kernel can be written as
+$k(x, x'; l) = \exp(-\frac{1}{2} s^2)$, where relative distance $s = |x - x'| / l$.
+With a Gaussian measure $\mu = \mathcal{N}(0, \sigma^2)$ over the domain $X = \mathbb{R}$,
+we can write the eigenvalues and eigenfunctions of the kernel integral operator as follows.
+(See e.g., \cite{ZhuHY1998} Sec. 4 and \cite{Gradshteyn2014} 7.374 eq. 8.)
+
+Denote normalized coordinate $x_\sigma = x / \sigma$ and normalized lengthscale $l_\sigma = l / \sigma$.
+Define constants $\alpha = (\frac{1}{4} + l_\sigma^{-2})^{\frac{1}{4}} > 2^{-\frac{1}{2}}$ and
+$\beta = \frac{1}{2} l_\sigma^2 + 1 + (\frac{1}{4} l_\sigma^4 + l_\sigma^2)^{\frac{1}{2}} > 1$.
+For $k \in \mathbb{N}$, the $k$th eigenvalue is $\lambda_k = l_\sigma \beta^{-\frac{1}{2} - k}$,
+and a corresponding eigenfunction is
+$\phi_k(x) = \exp\{-\frac{1}{2}(\alpha^2 - \frac{1}{2}) x_\sigma^2\} \cdot H_k(\alpha x_\sigma)$,
+where $H_k(x)$ is the $k$th-order Hermite polynomial defined by
+$H_k(x) := (-1)^k \exp(x^2) \frac{d^k}{dx^k} \exp(-x^2)$.
 
 
-\section{Misc: Chebyshev polynomial-based spectral representation for BO on the hypercube}
+\section{Misc: Chebyshev Polynomial-based Spectral Representation
+  for BO on the Hypercube}
 
 \textcolor{red}{TODO:
 \begin{itemize}
