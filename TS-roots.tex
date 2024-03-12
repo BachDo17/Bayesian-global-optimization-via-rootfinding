@@ -607,10 +607,15 @@ If we truncate the sum in \Cref{eqn621} to the first $N$ terms, the approximatio
 
 We use \Cref{eqn622} to approximate the covariance matrix of two datasets $\mathcal{X}$ and $\mathcal{X}'$ that consist of $N_\text{p}$ samples of $x \in [-1,1]$ and $N_\text{p}$ samples of $x' \in [-1,1]$.
 The error is defined as $\frac{1}{N_\text{p}^2} \sum_{i=1}^{N_\text{p}} \sum_{i=1}^{N_\text{p}}| k(x_i,x'_j;l) -  \sum_{k=0}^{N-1} \lambda_k \phi_k(x_i) \phi_k(x'_j)|$, where $N_\text{p}$ is the number of data generated on the given interval.
-\Cref{fig:approxiationerror} shows the error for different values of $N$ and $l$.
+\Cref{fig:approxError} shows the error for different values of $N$ and $l$.
 
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=0.7\linewidth]{img/approxError.pdf}
+	\caption{Approximation error for SE kernel when using Hermite polynomial features. The approximation error rapidly decays with increasing the number of features. For the same number of features, increasing the length scale improves the approximation.}
+	\label{fig:approxError}
+\end{figure}
 
-Approximation error and $l=0.1$
 %The univariate squared exponential (SE) kernel can be written as
 %$k(x, x'; l) = \exp(-\frac{1}{2} s^2)$, where relative distance $s = |x - x'| / l$.
 %With a Gaussian measure $\mu = \mathcal{N}(0, \sigma^2)$ over the domain $X = \mathbb{R}$,
@@ -643,7 +648,7 @@ Approximation error and $l=0.1$
 
 
 
-\section*{References}
+%\section*{References}
 
 \bibliography{TS-roots}
 
