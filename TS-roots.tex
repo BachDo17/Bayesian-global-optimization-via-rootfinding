@@ -588,20 +588,23 @@ This allows us to sample the GP posterior via projection, see Alg A.5.
 
 \subsection{Spectrum of the SE Kernel}
 
-\edit{
 The univariate squared exponential (SE) kernel can be written as
 $k(x, x'; \rho) = \exp(-\frac{\rho}{1-\rho} s^2)$, where relative distance $s = |x - x'|$ and $\rho \in (0,1)$.
 The length scale $l$ relates to $\rho$ via $\frac{1}{2 l^2} = \frac{\rho}{1-\rho}$.
 Mehler's formula allows us to determine the eigenvalues and eigenfunctions of the kernel integral operator as follows \cite{Vinaroz2022}:
-% 
-\begin{equation}\label{}
+\begin{equation}\label{eqn621}
 	\exp(-\frac{\rho}{1-\rho} (x - x')^2) = \sum_{k=0}^{\infty} \lambda_k \phi_k(x) \phi_k(x').
 \end{equation} 
 For $k \in \mathbb{N}$, the $k$th eigenvalue and the corresponding eigenfunction are $\lambda_k = (1-\rho) \rho^k$ and
 $\phi_k(x) = \frac{1}{\sqrt{N_k}} \exp\left(-\frac{\rho}{1+\rho} x^2\right) H_k(x)$, where $N_k = 2^c c! \sqrt{\frac{1-\rho}{1+\rho}}$ and $H_k(x)$ the $k$th-order Hermite polynomial defined by
 $H_k(x) = (-1)^k \exp(x^2) \frac{d^k}{dx^k} \exp(-x^2)$.
 This result can also be derived from Mercer's theorem, as outlined in \cite{ZhuHY1998}.
-}
+
+If we truncate the sum in \Cref{eqn621} to the first $N$ terms, the approximation of SE kernel becomes
+\begin{equation}\label{eqn622}
+	k(x, x'; \rho) = \sum_{k=0}^{N-1} \lambda_k \phi_k(x) \phi_k(x').
+\end{equation}
+
 
 %The univariate squared exponential (SE) kernel can be written as
 %$k(x, x'; l) = \exp(-\frac{1}{2} s^2)$, where relative distance $s = |x - x'| / l$.
