@@ -605,7 +605,7 @@ If we truncate the sum in \Cref{eqn621} to the first $N$ terms, the approximatio
 	k(x, x'; l) = \sum_{k=0}^{N-1} \lambda_k \phi_k(x) \phi_k(x').
 \end{equation}
 
-We use \Cref{eqn622} to approximate the covariance matrix of two datasets $\mathcal{X}$ and $\mathcal{X}'$ that consist of $N_\text{p}$ samples of $x \in [-1,1]$ and $N_\text{p}$ samples of $x' \in [-1,1]$.
+We use \Cref{eqn622} to approximate the cross-covariance matrix of two datasets $\mathcal{X}$ and $\mathcal{X}'$ that consist of $N_\text{p}$ samples of $x \in [-1,1]$ and $N_\text{p}$ samples of $x' \in [-1,1]$.
 The error is then defined as $\frac{1}{N_\text{p}^2} \sum_{i=1}^{N_\text{p}} \sum_{i=1}^{N_\text{p}}| k(x_i,x'_j;l) -  \sum_{k=0}^{N-1} \lambda_k \phi_k(x_i) \phi_k(x'_j)|$.
 \Cref{fig:approxError} shows the approximation error for different values of $N$ and $l$.
 
