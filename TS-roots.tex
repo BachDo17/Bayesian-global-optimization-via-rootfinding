@@ -211,7 +211,9 @@ These are the key ideas of this work.
 Thompson sampling.
 BoTorch \cite{Balandat2020}.
 
-\section{(Methods)}
+\section{Bayesian Optimization via Rootfinding}
+
+\subsection{Rootfinding for Thompson Sampling}
 
 Consider a separable Gaussian process prior
 $\mathcal{GP}(0, \prod_{i=1}^d \kappa_i)$ such that the eigenvalues
@@ -264,6 +266,8 @@ trade-off in BO, it is unnecessary to sample the posterior exactly. If
 exact sampling or a truly Bayesian approach is desirable, one may use a
 Gibbs sampler instead. \cmtR{Consult Yabo.}
 
+\subsection{Approximate Sample Paths of GP Posterior}
+
 % Algorithm: newton
 \alglanguage{pseudocode}
 \begin{algorithm}[h]
@@ -301,6 +305,7 @@ Gibbs sampler instead. \cmtR{Consult Yabo.}
   \label{fig:projection}
 \end{figure}
 
+\subsection{Univariate Global Rootfinding and Extrema of Multivariate Separable Functions}
 
 The critical points of a separable multivariate function are exactly the
 The critical points of a \edit{completely multiplicatively} separable multivariate function are exactly the
@@ -403,20 +408,17 @@ simple and we omit it here.)
 
 \section{Supplementary Material}
 
-\subsection{Bayesian Optimization via Spectral Sampling}
+\subsection{Sequential Optimization}
 
-A general procedure for sequential optimization is given in Alg A.1; see
-\cite{Garnett2023} Alg 1.1. The initial dataset can either be empty or
-contain some pairs of inputs and observations; in the latter case we can
-write $\mathcal{D}^0 = \{(\mathbf{x}^i, y^i)\}_{i=1-n_0}^0$, where
+A general procedure for sequential optimization is given in \cref{alg:seqopt}. The initial dataset $\mathcal{D}^0$ can either be empty or contain some pairs of input and output observations.
+In the latter case we can write $\mathcal{D}^0 = \{(\mathbf{x}^i, y^i)\}_{i=1}^{n_0}$, where
 $n_0 \in \mathbb{N}_{>0}$. Three components of this algorithm can be
-customized: the observation model $\mathrm{Observe}(\mathbf{x})$, the
-termination condition, and the optimization policy
-$\mathrm{Policy}(\mathcal{D})$.
+customized: the observation model $\mathrm{Observe}(\mathbf{x})$, the optimization policy $\mathrm{Policy}(\mathcal{D})$, and the
+termination condition.
 
 % Algorithm: sequential optimization 
 \alglanguage{pseudocode}
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
   \caption{Sequential optimization \cite{Garnett2023}.}
   \label{alg:seqopt}
   \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
@@ -431,7 +433,7 @@ $\mathrm{Policy}(\mathcal{D})$.
   \end{algorithmic}
 \end{algorithm}
 
-Bayesian optimization (BO) is can be seen as an optimization policy for
+BO can be seen as an optimization policy for
 sequential optimization; a formal procedure is given in Alg A.2. Three
 components of this algorithm can be customized: the prior probabilistic
 model $\widehat{f}^0$, the acquisition function
@@ -461,6 +463,8 @@ problems are exactly the same with a change of sign to the objective.
     \State \Return $\mathbf{x}^k$
   \end{algorithmic}
 \end{algorithm}
+
+\subsection{Bayesian Optimization via Spectral Sampling}
 
 When applied to BO, Thompson sampling (TS) generates a random
 acquisition function simply by sampling the posterior model. The
@@ -611,7 +615,7 @@ The error is then defined as $\frac{1}{N_\text{p}^2} \sum_{i=1}^{N_\text{p}} \su
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=0.7\linewidth]{img/approxError.pdf}
+	\includegraphics[width=0.6\linewidth]{img/approxError.pdf}
 	\caption{Approximation error for SE kernel when using Hermite polynomial features. The approximation error rapidly decays with increasing the number of features. For the same number of features, increasing the length scale improves the approximation.}
 	\label{fig:approxError}
 \end{figure}
