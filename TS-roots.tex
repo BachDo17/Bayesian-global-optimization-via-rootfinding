@@ -261,7 +261,7 @@ Suppose this is the case, we can represent the GP prior using the  Karhunen-Loè
 If this representation converges quickly, which we can sample the GP prior by truncating the KL to the first $N$ terms, see
 \cref{alg:sam_priorGP}.
 
-% Algorithm: unconditional spectral sampling
+% algorithm: unconditional spectral sampling
 \alglanguage{pseudocode}
 \begin{algorithm}[t]
 	\caption{Spectral sampling of Gaussian process prior.}
@@ -329,7 +329,7 @@ and therefore
 $\widetilde{\mathbf{w}} \sim \mathbf{w}|_{\mathcal{S}} \sim \mathbf{P}_{\mathcal{S}} \mathbf{w}$.
 This allows us to sample the GP posterior via projection, see \cref{alg:sam_postGP}.
 
-% Algorithm: conditional spectral sampling
+% algorithm: conditional spectral sampling
 \alglanguage{pseudocode}
 \begin{algorithm}[t]
 	\caption{Spectral sampling of Gaussian process posterior.}
