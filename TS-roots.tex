@@ -231,15 +231,16 @@ $\mathcal{GP}(0, \prod_{i=1}^d \kappa_i)$ such that the eigenvalues
 and eigenfunctions $\{(\lambda_{i,j}, \phi_{i,j}(x_i))\}_{j=0}^\infty$
 are known analytically for the kernel integral operator of each
 univariate kernel $\kappa_i(x_i, x_i')$ with respect to some
-probability measure $\mu_i$ on $\mathbb{R}$. Moreover, we assume
+probability measure $\mu_i$ on $\mathbb{R}$.
+Moreover, we assume
 that the eigenfunctions have the form
 $\phi_{i,j}(x_i) = p_{i,j}(x_i) \exp(q_i(x_i))$ where $p_{i,j}$ and
-$q_i$ are polynomials. These assumptions are satisfied by the default
-kernel choice in BO: the separable squared exponential (SE) kernel, also
-known as the automatic relevance determination (ARD) kernel. The
-eigenfunctions of the SE kernel, with respect to the standard Gaussian
+$q_i$ are polynomials.
+These assumptions are satisfied by the default
+kernel choice in BO, namely the separable squared exponential (SE) kernel.%,also known as the automatic relevance determination (ARD) kernel.
+The eigenfunctions of the SE kernel, with respect to the standard Gaussian
 measure, are Hermite polynomials weighted by a common Gaussian function,
-see Supplemental Materials.
+see \cref{sec:SEspectrum}.
 
 Our main algorithm is outlined in \cref{alg:TS-roots}.
 
@@ -278,6 +279,9 @@ exact sampling or a truly Bayesian approach is desirable, one may use a
 Gibbs sampler instead. \cmtR{Consult Yabo.}
 
 \subsection{Approximate Sample Paths of GP Posterior}
+
+The Newton iteration locally attracts any point to its
+projection with quadratic error \cite{Gatilov2014}.
 
 % Algorithm: newton
 \alglanguage{pseudocode}
@@ -604,6 +608,7 @@ This allows us to sample the GP posterior via projection, see Alg A.5.
 \end{algorithm}
 
 \subsection{Spectrum of the SE Kernel}
+\label{sec:SEspectrum}
 
 The univariate squared exponential (SE) kernel can be written as
 $k(x, x'; l) = \exp(-\frac{\rho}{1-\rho} s^2)$, where relative distance $s = |x - x'|$ and $\rho \in (0,1)$.
@@ -613,7 +618,7 @@ Mehler's formula allows us to determine the eigenvalues and eigenfunctions of th
 	\exp(-\frac{\rho}{1-\rho} (x - x')^2) = \sum_{k=0}^{\infty} \lambda_k \phi_k(x) \phi_k(x').
 \end{equation} 
 For $k \in \mathbb{N}$, the $k$th eigenvalue and the corresponding eigenfunction are $\lambda_k = (1-\rho) \rho^k$ and
-$\phi_k(x) = \frac{1}{\sqrt{N_k}} \exp\left(-\frac{\rho}{1+\rho} x^2\right) H_k(x)$, where $N_k = 2^c c! \sqrt{\frac{1-\rho}{1+\rho}}$ and $H_k(x)$ the $k$th-order Hermite polynomial defined by
+$\phi_k(x) = \frac{1}{\sqrt{N_k}} H_k(x) \exp\left(-\frac{\rho}{1+\rho} x^2\right)$, where $N_k = 2^c c! \sqrt{\frac{1-\rho}{1+\rho}}$ and $H_k(x)$ the $k$th-order Hermite polynomial defined by
 $H_k(x) = (-1)^k \exp(x^2) \frac{d^k}{dx^k} \exp(-x^2)$.
 This result can also be derived from Mercer's theorem, as outlined in \cite{ZhuHY1998}.
 
