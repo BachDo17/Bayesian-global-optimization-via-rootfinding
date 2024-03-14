@@ -213,8 +213,8 @@ These are the key ideas of this work.
 \subsection{Gaussian Processes}
 
 Consider a training dataset $\mathcal{D}=\left\{ {\bf X},{\bf Y}\right\}=\{{\bf x}^k,y^k\}_{k=1}^n$, where $\textbf{x}^k$ and $y^k$ are observations of input variables and the corresponding observations of the objective function.
-We wish to build from $\mathcal{D}$ a mapping $y({\bf x})=f({\bf x}) + \varepsilon_\text{n}$, where $f({\bf x})$ is a regression function and $\varepsilon_\text{n} \sim \mathcal{N}(0,\sigma^2_\text{n})$  is an additive zero-mean Gaussian noise with variance $\sigma^2_\text{n}$.
-This observation noise is assumed to be independent and identically distributed. We set $\sigma_\text{n} = 0$ for noiseless output observations.
+We wish to build from $\mathcal{D}$ a mapping $y({\bf x})=f({\bf x}) + \varepsilon$, where $f({\bf x})$ is a regression function and $\varepsilon \sim \mathcal{N}(0,\sigma^2)$  is an additive zero-mean Gaussian noise with variance $\sigma^2$.
+This observation noise is assumed to be independent and identically distributed. We set $\sigma = 0$ for noiseless output observations.
 
 A GP assumes that any finite subset of an infinite set of regression function values has a joint Gaussian distribution \cite{Rasmussen2006}.
 This is encoded in the following GP prior:
@@ -222,9 +222,9 @@ This is encoded in the following GP prior:
 \begin{equation}\label{eqn1}
 	f(\cdot) \sim \mathcal{GP} \left((\cdot),\kappa(\cdot,\cdot)\right),
 \end{equation}
-where $\kappa({\bf x},{\bf x}')$ is a positive semi-definite covariance function characterized by several hyperparameters.
+where $\kappa({\bf x},{\bf x}')$ is a positive definite covariance function characterized by several hyperparameters.
 
-By conditioning such prior knowledge on $\mathcal{D}$ and utilizing the observation noise assumption, we can show that the vector of observations $\{y({\bf x}^1),\dots,y({\bf x}^n)\}$ is distributed according to an $N$-variate Gaussian with zero mean and covariance matrix ${\bf C} = {\bf K} + \sigma^2_\text{n} {\bf I}_n$, where the $(i,j)$th element of ${\bf K}$ is $\kappa({\bf x}^i,{\bf x}^j)$ and ${\bf I}_n$ denotes an $n$-by-$n$ identity matrix.
+By conditioning such prior knowledge on $\mathcal{D}$ and utilizing the observation noise assumption, we can show that the vector of observations $\{y({\bf x}^1),\dots,y({\bf x}^n)\}$ is distributed according to an $N$-variate Gaussian with zero mean and covariance matrix ${\bf C} = {\bf K} + \sigma^2 {\bf I}_n$, where the $(i,j)$th element of ${\bf K}$ is $\kappa({\bf x}^i,{\bf x}^j)$ and ${\bf I}_n$ denotes an $n$-by-$n$ identity matrix.
 By further applying the conditional multivariate Gaussian, we obtain the posterior predictive distribution at an unseen input variable vector ${\bf x}^\star$, i.e., $p\left(f({\bf x}^\star)|{\bf x}^\star,\mathcal{D}\right) = \mathcal{N}\left(\mu_\text{f}({\bf x}^\star),\sigma_\text{f}^2({\bf x}^\star)\right)$, which contains the information about the mapping we wish to build. The predictive mean and variance are 
 % 
 \begin{equation}\label{eqn2}
@@ -243,15 +243,10 @@ where
 
 \subsection{Sampling from Gaussian Process Posterior}
 
-We can sample $\mathcal{GP}(0, \kappa)$
-efficiently, if we have a spectral representation of the covariance
-function $\kappa(\mathbf{x}, \mathbf{x}')$ that converges quickly.
+We can sample the GP prior efficiently, if we have a spectral representation of the covariance function $\kappa(\mathbf{x}, \mathbf{x}')$ that converges quickly.
 %By spectral representation, we mean a series of rank-one kernels (aka positive type functions).
 Per the Mercer's theorem on probability spaces
-(see e.g., \cite{Rasmussen2006} Sec 4.3), any kernel that is
-essentially bounded with respect to some probability measure $\mu$ on
-the domain $\mathcal{X}$ has a spectral representation
-$\kappa(\mathbf{x}, \mathbf{x}') = \sum_{i=0}^\infty \lambda_i \phi_i(\mathbf{x}) \phi_i(\mathbf{x}')$,
+(see e.g., \cite{Rasmussen2006} Sec 4.3), any positive definite covariance function that is essentially bounded with respect to some probability measure $\mu$ on the domain $\mathcal{X}$ has a spectral representation $\kappa(\mathbf{x}, \mathbf{x}') = \sum_{i=0}^\infty \lambda_i \phi_i(\mathbf{x}) \phi_i(\mathbf{x}')$,
 where $(\lambda_i, \phi_i(\mathbf{x}))$ is a pair of eigenvalue and
 eigenfunction of the kernel integral operator $T_\kappa$ and the
 eigenvalues are sorted in decreasing order such that
@@ -261,9 +256,9 @@ $(T_\kappa f)(\mathbf{x}) := \int_{\mathcal{X}} \kappa(\mathbf{x}, \mathbf{x}') 
 The eigenfunctions satisfy $T_\kappa \phi_i = \lambda_i \phi_i$ and
 they are orthonormal in $L^2_\mu(\mathcal{X})$. The covariance
 functions of GP priors commonly used in BO usually
-have a spectral representation known in analytical form. Suppose this is
-the case, we can represent the prior and posterior GP as $f(\mathbf{x}) = \sum_{i=0}^{\infty} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$ and $f(\mathbf{x}) = \sum_{i=0}^{N-1} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$, respectively.
-We can sample the GP prior as a truncated Wiener series, see
+have a spectral representation known in analytical form.
+Suppose this is the case, we can represent the GP prior using the  Karhunen-Loève (KL) expansion, as  $f(\mathbf{x}) = \sum_{i=0}^{\infty} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$, where  $w_i \overset{\text{iid}}{\sim} \mathcal{N}(0,1)$ are independent standard Gaussian random variables.
+If this representation converges quickly, which we can sample the GP prior by truncating the KL to the first $N$ terms, see
 \cref{alg:sam_priorGP}.
 
 % Algorithm: unconditional spectral sampling
@@ -279,45 +274,60 @@ We can sample the GP prior as a truncated Wiener series, see
 	\end{algorithmic}
 \end{algorithm}
 
-To simplify notation, we assume that the GP prior mean function
-$m(\mathbf{x}) = 0$. If the observation model
-$\mathrm{Observe}(\mathbf{x})$ can be written as
-$y^i = f(\mathbf{x}^i) + z^i$ where
-$z^i \overset{\text{iid}}{\sim} \mathcal{N}(0, \varepsilon^2)$, then the
-posterior given dataset
-$\mathcal{D} = \{(\mathbf{x}^i, y^i)\}_{i=1}^n$ is also a Gaussian
-process
-$\widehat{f}^0 | \mathcal{D} \sim \mathcal{GP}(m_{\mathcal{D}}, \kappa_{\mathcal{D}})$,
-where
-$m_{\mathcal{D}}(\mathbf{x}) = \mathbf{y}^\intercal (\mathbf{K} + \varepsilon^2 \mathbf{I}_n)^{-1} \mathbf{k}(\mathbf{x})$
-and
-$\kappa_{\mathcal{D}}(\mathbf{x}, \mathbf{x}') = \kappa(\mathbf{x}, \mathbf{x}') - \mathbf{k}(\mathbf{x})^\intercal (\mathbf{K} + \varepsilon^2 \mathbf{I}_n)^{-1} \mathbf{k}(\mathbf{x}')$.
-Here we denote
-$\mathbf{K} = [\kappa(\mathbf{x}^i, \mathbf{x}^j)]_{i \in n}^{j \in n}$
-and
-$\mathbf{k}(\mathbf{x}) = (\kappa(\mathbf{x}, \mathbf{x}^i))_{i=1}^n$.
+%To simplify notation, we assume that the GP prior mean function
+%$m(\mathbf{x}) = 0$. If the observation model
+%$\mathrm{Observe}(\mathbf{x})$ can be written as
+%$y^i = f(\mathbf{x}^i) + z^i$ where
+%$z^i \overset{\text{iid}}{\sim} \mathcal{N}(0, \varepsilon^2)$, then the
+%posterior given dataset
+%$\mathcal{D} = \{(\mathbf{x}^i, y^i)\}_{i=1}^n$ is also a Gaussian
+%process
+%$\widehat{f}^0 | \mathcal{D} \sim \mathcal{GP}(m_{\mathcal{D}}, \kappa_{\mathcal{D}})$,
+%where
+%$m_{\mathcal{D}}(\mathbf{x}) = \mathbf{y}^\intercal (\mathbf{K} + \varepsilon^2 \mathbf{I}_n)^{-1} \mathbf{k}(\mathbf{x})$
+%and
+%$\kappa_{\mathcal{D}}(\mathbf{x}, \mathbf{x}') = \kappa(\mathbf{x}, \mathbf{x}') - \mathbf{k}(\mathbf{x})^\intercal (\mathbf{K} + \varepsilon^2 \mathbf{I}_n)^{-1} \mathbf{k}(\mathbf{x}')$.
+%Here we denote
+%$\mathbf{K} = [\kappa(\mathbf{x}^i, \mathbf{x}^j)]_{i \in n}^{j \in n}$
+%and
+%$\mathbf{k}(\mathbf{x}) = (\kappa(\mathbf{x}, \mathbf{x}^i))_{i=1}^n$.
 
-The GP posterior can be sampled as an updated truncated Wiener series
-$\widehat{f}^0 | \mathcal{D} = \sum_{k=0}^{N-1} \widetilde{w}_k \sqrt{\lambda_k} \phi_k(\mathbf{x})$,
+The GP posterior can also be sampled as an conditional truncated KL expansion
+$\widetilde{f}(\mathbf{x}) \approx \sum_{k=0}^{N-1} \widetilde{w}_k \sqrt{\lambda_k} \phi_k(\mathbf{x})$,
 where
-$\widetilde{\mathbf{w}} \sim \mathcal{N}_N(\mathbf{w}_\star, \boldsymbol{\Sigma}_\star)$.
+$\widetilde{\mathbf{w}} \overset{\text{iid}}{\sim} \mathcal{N}_N(\mathbf{w}_\star, \boldsymbol{\Sigma}_\star)$.
 Let $\boldsymbol{\Phi} = [\phi_j(\mathbf{x}^i)]_{i \in n}^{j \in N}$,
 $\boldsymbol{\Lambda} = \mathrm{diag}(\lambda_i)_{i \in N}$ and
 $\mathbf{A} = \boldsymbol{\Phi} \boldsymbol{\Lambda}^{1/2}$. Assume
-that the observation is noiseless (i.e., $\varepsilon = 0$), we have
+that the observation is noiseless, we have
 the posterior mean $\mathbf{w}_\star = \mathbf{A}^\dagger \mathbf{y}$
 and the posterior covariance
 $\boldsymbol{\Sigma}_\star = \mathbf{P}_{\ker(\mathbf{A})}$. Here
-$\dagger$ denotes the Moore--Penrose inverse, $\ker()$ denotes the
+$\dagger$ denotes the Moore--Penrose inverse, $\ker(\cdot)$ denotes the
 kernel (or null space) of a matrix, and $\mathbf{P}$ denotes the
 orthogonal projection operator onto a subspace. Assume that
 $\mathrm{rank}(\mathbf{A}) = n < N$ and let
-$\mathbf{A} = \mathbf{U} \mathbf{D} \mathbf{V}^\intercal$ be a thin
-SVD, we have
+$\mathbf{A} = \mathbf{U} \mathbf{D} \mathbf{V}^\intercal$ be a thin singular value decomposition (SVD), we have
 $\mathbf{A}^\dagger = \mathbf{A}^\intercal (\mathbf{A} \mathbf{A}^\intercal)^{-1}$
 and
 $\mathbf{P}_{\ker(\mathbf{A})} = \mathbf{I}_N - \mathbf{V} \mathbf{V}^\intercal$.
 
+\emph{Spectral sampling of Gaussian process posterior is equivalent to
+	projection, given noiseless observations.} From Alg A.4 we see that the
+prior weights $\mathbf{w} = (w_i)_{i=1}^N$ is a standard Gaussian
+random vector. With noiseless observations, the posterior weights
+$\widetilde{\mathbf{w}}$ is distributed as the prior distribution
+restricted to set of points satisfying
+$\mathbf{f}(\mathbf{w}) = \mathbf{y}$, where
+$\mathbf{f}(\mathbf{w}) := (f(\mathbf{x}^i; \mathbf{w}))_{i=1}^n$ with
+$f(\mathbf{x}; \mathbf{w}) = \sum_{i=0}^{N-1} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$.
+This set---the preimage $\mathbf{f}^{-1}(\mathbf{y})$---is the affine
+subspace $\mathcal{S} = \mathbf{w}_\star + \ker(\mathbf{A})$. For a
+multivariate Gaussian distribution, its restriction to an affine
+subspace is the same with its orthogonal projection onto the subspace;
+and therefore
+$\widetilde{\mathbf{w}} \sim \mathbf{w}|_{\mathcal{S}} \sim \mathbf{P}_{\mathcal{S}} \mathbf{w}$.
+This allows us to sample the GP posterior via projection, see \cref{alg:sam_postGP}.
 
 % Algorithm: conditional spectral sampling
 \alglanguage{pseudocode}
@@ -625,29 +635,6 @@ procedure is formalized in Alg A.3.
     \State \Return $\alpha^k(\mathbf{x}) \sim \widehat{f}^k$
   \end{algorithmic}
 \end{algorithm}
-
-
-
-
-
-
-\emph{Spectral sampling of Gaussian process posterior is equivalent to
-projection, given noiseless observations.} From Alg A.4 we see that the
-prior weights $\mathbf{w} = (w_i)_{i=1}^N$ is a standard Gaussian
-random vector. With noiseless observations, the posterior weights
-$\widetilde{\mathbf{w}}$ is distributed as the prior distribution
-restricted to set of points satisfying
-$\mathbf{f}(\mathbf{w}) = \mathbf{y}$, where
-$\mathbf{f}(\mathbf{w}) := (f(\mathbf{x}^i; \mathbf{w}))_{i=1}^n$ with
-$f(\mathbf{x}; \mathbf{w}) = \sum_{i=0}^{N-1} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$.
-This set---the preimage $\mathbf{f}^{-1}(\mathbf{y})$---is the affine
-subspace $\mathcal{S} = \mathbf{w}_\star + \ker(\mathbf{A})$. For a
-multivariate Gaussian distribution, its restriction to an affine
-subspace is the same with its orthogonal projection onto the subspace;
-and therefore
-$\widetilde{\mathbf{w}} \sim \mathbf{w}|_{\mathcal{S}} \sim \mathbf{P}_{\mathcal{S}} \mathbf{w}$.
-This allows us to sample the GP posterior via projection, see Alg A.5.
-
 
 
 \subsection{Spectrum of the SE Kernel}
