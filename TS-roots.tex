@@ -212,7 +212,7 @@ These are the key ideas of this work.
 
 \subsection{Gaussian Processes}
 
-Consider a training dataset $\mathcal{D}=\left\{ {\bf X},{\bf Y}\right\}=\{{\bf x}^k,y^k\}_{k=1}^N$, where $\textbf{x}^k$ and $y^k$ are observations of input variables and the corresponding observations of the objective function.
+Consider a training dataset $\mathcal{D}=\left\{ {\bf X},{\bf Y}\right\}=\{{\bf x}^k,y^k\}_{k=1}^n$, where $\textbf{x}^k$ and $y^k$ are observations of input variables and the corresponding observations of the objective function.
 We wish to build from $\mathcal{D}$ a mapping $y({\bf x})=f({\bf x}) + \varepsilon_\text{n}$, where $f({\bf x})$ is a regression function and $\varepsilon_\text{n} \sim \mathcal{N}(0,\sigma^2_\text{n})$  is an additive zero-mean Gaussian noise with variance $\sigma^2_\text{n}$.
 This observation noise is assumed to be independent and identically distributed. We set $\sigma_\text{n} = 0$ for noiseless output observations.
 
@@ -220,11 +220,11 @@ A GP assumes that any finite subset of an infinite set of regression function va
 This is encoded in the following GP prior:
 %
 \begin{equation}\label{eqn1}
-	f(\cdot) \sim \mathcal{GP} \left(0,\kappa(\cdot,\cdot)\right),
+	f(\cdot) \sim \mathcal{GP} \left((\cdot),\kappa(\cdot,\cdot)\right),
 \end{equation}
 where $\kappa({\bf x},{\bf x}')$ is a positive semi-definite covariance function characterized by several hyperparameters.
 
-By conditioning such prior knowledge on $\mathcal{D}$ and utilizing the observation noise assumption, we can show that the vector of observations $\{y({\bf x}^1),\dots,y({\bf x}^N)\}$ is distributed according to an $N$-variate Gaussian with zero mean and covariance matrix ${\bf C} = {\bf K} + \sigma^2_\text{n} {\bf I}_N$, where the $(i,j)$th element of ${\bf K}$ is $\kappa({\bf x}^i,{\bf x}^j)$ and ${\bf I}_N$ denotes an $N$-by-$N$ identity matrix.
+By conditioning such prior knowledge on $\mathcal{D}$ and utilizing the observation noise assumption, we can show that the vector of observations $\{y({\bf x}^1),\dots,y({\bf x}^n)\}$ is distributed according to an $N$-variate Gaussian with zero mean and covariance matrix ${\bf C} = {\bf K} + \sigma^2_\text{n} {\bf I}_n$, where the $(i,j)$th element of ${\bf K}$ is $\kappa({\bf x}^i,{\bf x}^j)$ and ${\bf I}_n$ denotes an $n$-by-$n$ identity matrix.
 By further applying the conditional multivariate Gaussian, we obtain the posterior predictive distribution at an unseen input variable vector ${\bf x}^\star$, i.e., $p\left(f({\bf x}^\star)|{\bf x}^\star,\mathcal{D}\right) = \mathcal{N}\left(\mu_\text{f}({\bf x}^\star),\sigma_\text{f}^2({\bf x}^\star)\right)$, which contains the information about the mapping we wish to build. The predictive mean and variance are 
 % 
 \begin{equation}\label{eqn2}
@@ -238,12 +238,104 @@ By further applying the conditional multivariate Gaussian, we obtain the posteri
 where
 % 
 \begin{equation}\label{eqn4}
-	{\bf K^\star} = \left[\kappa({\bf x}^\star,{\bf x}^1),\dots,\kappa({\bf x}^\star,{\bf x}^N)\right]^\intercal.
+	{\bf K^\star} = \left[\kappa({\bf x}^\star,{\bf x}^1),\dots,\kappa({\bf x}^\star,{\bf x}^n)\right]^\intercal.
 \end{equation}
 
 \subsection{Sampling from Gaussian Process Posterior}
 
+We can sample $\mathcal{GP}(0, \kappa)$
+efficiently, if we have a spectral representation of the covariance
+function $\kappa(\mathbf{x}, \mathbf{x}')$ that converges quickly.
+%By spectral representation, we mean a series of rank-one kernels (aka positive type functions).
+Per the Mercer's theorem on probability spaces
+(see e.g., \cite{Rasmussen2006} Sec 4.3), any kernel that is
+essentially bounded with respect to some probability measure $\mu$ on
+the domain $\mathcal{X}$ has a spectral representation
+$\kappa(\mathbf{x}, \mathbf{x}') = \sum_{i=0}^\infty \lambda_i \phi_i(\mathbf{x}) \phi_i(\mathbf{x}')$,
+where $(\lambda_i, \phi_i(\mathbf{x}))$ is a pair of eigenvalue and
+eigenfunction of the kernel integral operator $T_\kappa$ and the
+eigenvalues are sorted in decreasing order such that
+$\lambda_i \ge \lambda_{i+1} \ge 0$, $i \in \mathbb{N}$. The kernel
+integral operator is defined by its action on a function as
+$(T_\kappa f)(\mathbf{x}) := \int_{\mathcal{X}} \kappa(\mathbf{x}, \mathbf{x}') f(\mathbf{x}') \mu(d \mathbf{x}')$.
+The eigenfunctions satisfy $T_\kappa \phi_i = \lambda_i \phi_i$ and
+they are orthonormal in $L^2_\mu(\mathcal{X})$. The covariance
+functions of GP priors commonly used in BO usually
+have a spectral representation known in analytical form. Suppose this is
+the case, we can represent the prior and posterior GP as $f(\mathbf{x}) = \sum_{i=0}^{\infty} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$ and $f(\mathbf{x}) = \sum_{i=0}^{N-1} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$, respectively.
+We can sample the GP prior as a truncated Wiener series, see
+\cref{alg:sam_priorGP}.
 
+% Algorithm: unconditional spectral sampling
+\alglanguage{pseudocode}
+\begin{algorithm}[t]
+	\caption{Spectral sampling of Gaussian process prior.}
+	\label{alg:sam_priorGP}
+	\begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+		\Input  eigenpairs
+		$\{(\lambda_i, \phi_i(\mathbf{x}))\}_{i=0}^{N-1}$
+		\State $w_i \overset{\text{iid}}{\sim} \mathcal{N}(0,1)$
+		\State \Return $f(\mathbf{x}) \gets \sum_{i=0}^{N-1} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$
+	\end{algorithmic}
+\end{algorithm}
+
+To simplify notation, we assume that the GP prior mean function
+$m(\mathbf{x}) = 0$. If the observation model
+$\mathrm{Observe}(\mathbf{x})$ can be written as
+$y^i = f(\mathbf{x}^i) + z^i$ where
+$z^i \overset{\text{iid}}{\sim} \mathcal{N}(0, \varepsilon^2)$, then the
+posterior given dataset
+$\mathcal{D} = \{(\mathbf{x}^i, y^i)\}_{i=1}^n$ is also a Gaussian
+process
+$\widehat{f}^0 | \mathcal{D} \sim \mathcal{GP}(m_{\mathcal{D}}, \kappa_{\mathcal{D}})$,
+where
+$m_{\mathcal{D}}(\mathbf{x}) = \mathbf{y}^\intercal (\mathbf{K} + \varepsilon^2 \mathbf{I}_n)^{-1} \mathbf{k}(\mathbf{x})$
+and
+$\kappa_{\mathcal{D}}(\mathbf{x}, \mathbf{x}') = \kappa(\mathbf{x}, \mathbf{x}') - \mathbf{k}(\mathbf{x})^\intercal (\mathbf{K} + \varepsilon^2 \mathbf{I}_n)^{-1} \mathbf{k}(\mathbf{x}')$.
+Here we denote
+$\mathbf{K} = [\kappa(\mathbf{x}^i, \mathbf{x}^j)]_{i \in n}^{j \in n}$
+and
+$\mathbf{k}(\mathbf{x}) = (\kappa(\mathbf{x}, \mathbf{x}^i))_{i=1}^n$.
+
+The GP posterior can be sampled as an updated truncated Wiener series
+$\widehat{f}^0 | \mathcal{D} = \sum_{k=0}^{N-1} \widetilde{w}_k \sqrt{\lambda_k} \phi_k(\mathbf{x})$,
+where
+$\widetilde{\mathbf{w}} \sim \mathcal{N}_N(\mathbf{w}_\star, \boldsymbol{\Sigma}_\star)$.
+Let $\boldsymbol{\Phi} = [\phi_j(\mathbf{x}^i)]_{i \in n}^{j \in N}$,
+$\boldsymbol{\Lambda} = \mathrm{diag}(\lambda_i)_{i \in N}$ and
+$\mathbf{A} = \boldsymbol{\Phi} \boldsymbol{\Lambda}^{1/2}$. Assume
+that the observation is noiseless (i.e., $\varepsilon = 0$), we have
+the posterior mean $\mathbf{w}_\star = \mathbf{A}^\dagger \mathbf{y}$
+and the posterior covariance
+$\boldsymbol{\Sigma}_\star = \mathbf{P}_{\ker(\mathbf{A})}$. Here
+$\dagger$ denotes the Moore--Penrose inverse, $\ker()$ denotes the
+kernel (or null space) of a matrix, and $\mathbf{P}$ denotes the
+orthogonal projection operator onto a subspace. Assume that
+$\mathrm{rank}(\mathbf{A}) = n < N$ and let
+$\mathbf{A} = \mathbf{U} \mathbf{D} \mathbf{V}^\intercal$ be a thin
+SVD, we have
+$\mathbf{A}^\dagger = \mathbf{A}^\intercal (\mathbf{A} \mathbf{A}^\intercal)^{-1}$
+and
+$\mathbf{P}_{\ker(\mathbf{A})} = \mathbf{I}_N - \mathbf{V} \mathbf{V}^\intercal$.
+
+
+% Algorithm: conditional spectral sampling
+\alglanguage{pseudocode}
+\begin{algorithm}[t]
+	\caption{Spectral sampling of Gaussian process posterior.}
+	\label{alg:sam_postGP}
+	\begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+		\Input eigenpairs $\{(\lambda_i, \phi_i(\mathbf{x}))\}_{i=0}^{N-1}$,
+		dataset $\mathcal{D}$
+		\State $\mathbf{w} \gets (w_i)_{i=0}^{N-1}$, where
+		$w_i \overset{\text{iid}}{\sim} \mathcal{N}(0,1)$
+		\State $\mathbf{A} \gets [\lambda_j \phi_j(\mathbf{x}^i)]_{i \in n}^{j \in N}$
+		\State $\mathbf{A} = \mathbf{U} \mathbf{D} \mathbf{V}^\intercal$ \Comment{thin SVD}
+		\State $\mathbf{w}_\star \gets \mathbf{V} \mathbf{D}^\dagger \mathbf{U}^\intercal \mathbf{y}$
+		\State $\widetilde{\mathbf{w}} \gets \mathbf{w}_\star + \mathbf{w} - \mathbf{V} \mathbf{V}^\intercal \mathbf{w}$
+		\State \Return $f(\mathbf{x}) \gets \sum_{i=0}^{N-1} \widetilde{w}_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$
+	\end{algorithmic}
+\end{algorithm}
 
 \subsection{Bayesian Optimization via Thompson Sampling}
 
@@ -534,79 +626,10 @@ procedure is formalized in Alg A.3.
   \end{algorithmic}
 \end{algorithm}
 
-We can sample a Gaussian process $\mathcal{GP}(m, \kappa)$
-efficiently, if we have a spectral representation of the covariance
-function $\kappa(\mathbf{x}, \mathbf{x}')$ that converges quickly. By
-spectral representation, we mean a series of rank-one kernels (aka
-positive type functions). Per the Mercer's theorem on probability spaces
-(see e.g., \cite{Rasmussen2006} Sec 4.3), any kernel that is
-essentially bounded with respect to some probability measure $\mu$ on
-the domain $\mathcal{X}$ has a spectral representation
-$\kappa(\mathbf{x}, \mathbf{x}') = \sum_{i=0}^\infty \lambda_i \phi_i(\mathbf{x}) \phi_i(\mathbf{x}')$,
-where $(\lambda_i, \phi_i(\mathbf{x}))$ is a pair of eigenvalue and
-eigenfunction of the kernel integral operator $T_\kappa$ and the
-eigenvalues are sorted in decreasing order such that
-$\lambda_i \ge \lambda_{i+1} \ge 0$, $i \in \mathbb{N}$. The kernel
-integral operator is defined by its action on a function as
-$(T_\kappa f)(\mathbf{x}) := \int_{\mathcal{X}} \kappa(\mathbf{x}, \mathbf{x}') f(\mathbf{x}') \mu(d \mathbf{x}')$.
-The eigenfunctions satisfy $T_\kappa \phi_i = \lambda_i \phi_i$ and
-they are orthonormal in $L^2_\mu(\mathcal{X})$. The covariance
-functions of GP priors commonly used in Bayesian optimization usually
-have a spectral representation known in analytical form. Suppose this is
-the case, we can sample the GP prior as a truncated Wiener series, see
-Alg A.4.
 
-% Algorithm: unconditional spectral sampling
-\alglanguage{pseudocode}
-\begin{algorithm}[h]
-  \caption{Spectral sampling of Gaussian process prior.}
-  \label{alg:sam_priorGP}
-  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
-    \Input mean function $m(\mathbf{x})$, eigenpairs
-  $\{(\lambda_i, \phi_i(\mathbf{x}))\}_{i=0}^{N-1}$
-    \State $w_i \overset{\text{iid}}{\sim} \mathcal{N}(0,1)$
-    \State \Return $f(\mathbf{x}) \gets m(\mathbf{x}) + \sum_{i=0}^{N-1} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$
-  \end{algorithmic}
-\end{algorithm}
 
-To simplify notation, we assume that the GP prior mean function
-$m(\mathbf{x}) = 0$. If the observation model
-$\mathrm{Observe}(\mathbf{x})$ can be written as
-$y^i = f(\mathbf{x}^i) + z^i$ where
-$z^i \overset{\text{iid}}{\sim} \mathcal{N}(0, \varepsilon^2)$, then the
-posterior given dataset
-$\mathcal{D} = \{(\mathbf{x}^i, y^i)\}_{i=1}^n$ is also a Gaussian
-process
-$\widehat{f}^0 | \mathcal{D} \sim \mathcal{GP}(m_{\mathcal{D}}, \kappa_{\mathcal{D}})$,
-where
-$m_{\mathcal{D}}(\mathbf{x}) = \mathbf{y}^\intercal (\mathbf{K} + \varepsilon^2 \mathbf{I}_n)^{-1} \mathbf{k}(\mathbf{x})$
-and
-$\kappa_{\mathcal{D}}(\mathbf{x}, \mathbf{x}') = \kappa(\mathbf{x}, \mathbf{x}') - \mathbf{k}(\mathbf{x})^\intercal (\mathbf{K} + \varepsilon^2 \mathbf{I}_n)^{-1} \mathbf{k}(\mathbf{x}')$.
-Here we denote
-$\mathbf{K} = [\kappa(\mathbf{x}^i, \mathbf{x}^j)]_{i \in n}^{j \in n}$
-and
-$\mathbf{k}(\mathbf{x}) = (\kappa(\mathbf{x}, \mathbf{x}^i))_{i=1}^n$.
 
-The GP posterior can be sampled as an updated truncated Wiener series
-$\widehat{f}^0 | \mathcal{D} = \sum_{k=0}^{N-1} \widetilde{w}_k \sqrt{\lambda_k} \phi_k(\mathbf{x})$,
-where
-$\widetilde{\mathbf{w}} \sim \mathcal{N}_N(\mathbf{w}_\star, \boldsymbol{\Sigma}_\star)$.
-Let $\boldsymbol{\Phi} = [\phi_j(\mathbf{x}^i)]_{i \in n}^{j \in N}$,
-$\boldsymbol{\Lambda} = \mathrm{diag}(\lambda_i)_{i \in N}$ and
-$\mathbf{A} = \boldsymbol{\Phi} \boldsymbol{\Lambda}^{1/2}$. Assume
-that the observation is noiseless (i.e., $\varepsilon = 0$), we have
-the posterior mean $\mathbf{w}_\star = \mathbf{A}^\dagger \mathbf{y}$
-and the posterior covariance
-$\boldsymbol{\Sigma}_\star = \mathbf{P}_{\ker(\mathbf{A})}$. Here
-$\dagger$ denotes the Moore--Penrose inverse, $\ker()$ denotes the
-kernel (or null space) of a matrix, and $\mathbf{P}$ denotes the
-orthogonal projection operator onto a subspace. Assume that
-$\mathrm{rank}(\mathbf{A}) = n < N$ and let
-$\mathbf{A} = \mathbf{U} \mathbf{D} \mathbf{V}^\intercal$ be a thin
-SVD, we have
-$\mathbf{A}^\dagger = \mathbf{A}^\intercal (\mathbf{A} \mathbf{A}^\intercal)^{-1}$
-and
-$\mathbf{P}_{\ker(\mathbf{A})} = \mathbf{I}_N - \mathbf{V} \mathbf{V}^\intercal$.
+
 
 \emph{Spectral sampling of Gaussian process posterior is equivalent to
 projection, given noiseless observations.} From Alg A.4 we see that the
@@ -625,23 +648,7 @@ and therefore
 $\widetilde{\mathbf{w}} \sim \mathbf{w}|_{\mathcal{S}} \sim \mathbf{P}_{\mathcal{S}} \mathbf{w}$.
 This allows us to sample the GP posterior via projection, see Alg A.5.
 
-% Algorithm: conditional spectral sampling
-\alglanguage{pseudocode}
-\begin{algorithm}[h]
-  \caption{Spectral sampling of Gaussian process posterior.}
-  \label{alg:sam_postGP}
-  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
-    \Input eigenpairs $\{(\lambda_i, \phi_i(\mathbf{x}))\}_{i=0}^{N-1}$,
-  dataset $\mathcal{D}$
-    \State $\mathbf{w} \gets (w_i)_{i=0}^{N-1}$, where
-  $w_i \overset{\text{iid}}{\sim} \mathcal{N}(0,1)$
-    \State $\mathbf{A} \gets [\lambda_j \phi_j(\mathbf{x}^i)]_{i \in n}^{j \in N}$
-    \State $\mathbf{A} = \mathbf{U} \mathbf{D} \mathbf{V}^\intercal$ \Comment{thin SVD}
-    \State $\mathbf{w}_\star \gets \mathbf{V} \mathbf{D}^\dagger \mathbf{U}^\intercal \mathbf{y}$
-    \State $\widetilde{\mathbf{w}} \gets \mathbf{w}_\star + \mathbf{w} - \mathbf{V} \mathbf{V}^\intercal \mathbf{w}$
-    \State \Return $f(\mathbf{x}) \gets \sum_{i=0}^{N-1} \widetilde{w}_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$
-  \end{algorithmic}
-\end{algorithm}
+
 
 \subsection{Spectrum of the SE Kernel}
 \label{sec:SEspectrum}
