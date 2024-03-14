@@ -258,14 +258,13 @@ they are orthonormal in $L^2_\mu(\mathcal{X})$. The covariance
 functions of GP priors commonly used in BO usually
 have a spectral representation known in analytical form.
 Suppose this is the case, we can represent the GP prior using the  Karhunen-Loève (KL) expansion, as  $f(\mathbf{x}) = \sum_{i=0}^{\infty} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$, where  $w_i \overset{\text{iid}}{\sim} \mathcal{N}(0,1)$ are independent standard Gaussian random variables.
-If this representation converges quickly, which we can sample the GP prior by truncating the KL to the first $N$ terms, see
-\cref{alg:sam_priorGP}.
+If this representation converges quickly, which we can sample the GP prior by truncating the KL to the first $N$ terms, see \cref{alg:sampriorGP}.
 
 % algorithm: unconditional spectral sampling
 \alglanguage{pseudocode}
 \begin{algorithm}[t]
 	\caption{Spectral sampling of Gaussian process prior.}
-	\label{alg:sam_priorGP}
+	\label{alg:sampriorGP}
 	\begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
 		\Input  eigenpairs
 		$\{(\lambda_i, \phi_i(\mathbf{x}))\}_{i=0}^{N-1}$
@@ -292,7 +291,7 @@ If this representation converges quickly, which we can sample the GP prior by tr
 %and
 %$\mathbf{k}(\mathbf{x}) = (\kappa(\mathbf{x}, \mathbf{x}^i))_{i=1}^n$.
 
-The GP posterior can also be sampled as an conditional truncated KL expansion
+The GP posterior can also be sampled as a conditional truncated KL expansion
 $\widetilde{f}(\mathbf{x}) \approx \sum_{k=0}^{N-1} \widetilde{w}_k \sqrt{\lambda_k} \phi_k(\mathbf{x})$,
 where
 $\widetilde{\mathbf{w}} \overset{\text{iid}}{\sim} \mathcal{N}_N(\mathbf{w}_\star, \boldsymbol{\Sigma}_\star)$.
@@ -327,13 +326,13 @@ multivariate Gaussian distribution, its restriction to an affine
 subspace is the same with its orthogonal projection onto the subspace;
 and therefore
 $\widetilde{\mathbf{w}} \sim \mathbf{w}|_{\mathcal{S}} \sim \mathbf{P}_{\mathcal{S}} \mathbf{w}$.
-This allows us to sample the GP posterior via projection, see \cref{alg:sam_postGP}.
+This allows us to sample the GP posterior via projection, see \cref{alg:sampostGP}.
 
 % algorithm: conditional spectral sampling
 \alglanguage{pseudocode}
 \begin{algorithm}[t]
 	\caption{Spectral sampling of Gaussian process posterior.}
-	\label{alg:sam_postGP}
+	\label{alg:sampostGP}
 	\begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
 		\Input eigenpairs $\{(\lambda_i, \phi_i(\mathbf{x}))\}_{i=0}^{N-1}$,
 		dataset $\mathcal{D}$
