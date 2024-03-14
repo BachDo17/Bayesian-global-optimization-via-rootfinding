@@ -159,14 +159,16 @@
 
 \section{Introduction}
 
-\emph{Optimization problem.} We want to solve the global optimization
-problem $\min_{\mathbf{x} \in \mathcal{X}} f(\mathbf{x})$ where the
+%\emph{Optimization problem.}
+We focus on solving the global optimization
+problem $\min_{\mathbf{x} \in \mathcal{X}} f(\mathbf{x})$, where the
 objective function $f: \mathcal{X} \mapsto \mathbb{R}$ has
 $d \in \mathbb{N}_{>0}$ variables taking values in
-$\mathcal{X} \subset \mathbb{R}^d$. The objective function
+$\mathcal{X} \subset \mathbb{R}^d$.
+In science and engineering, the objective function
 $f(\mathbf{x})$ is costly-to-evaluate so a surrogate-based sequential
 optimization approach could work well, and we choose Bayesian
-optimization (BO).
+optimization (BO) \cite{Garnett2023} for this purpose.
 
 At its core, BO approximates the objective function with a stochastic
 process such as a Gaussian process (GP), and uses the posterior process
@@ -210,6 +212,39 @@ These are the key ideas of this work.
 
 \subsection{Gaussian Processes}
 
+Consider a training dataset $\mathcal{D}=\left\{ {\bf X},{\bf Y}\right\}=\{{\bf x}^k,y^k\}_{k=1}^N$, where $\textbf{x}^k$ and $y^k$ are observations of input variables and the corresponding observations of the objective function.
+We wish to build from $\mathcal{D}$ a mapping $y({\bf x})=f({\bf x}) + \varepsilon_\text{n}$, where $f({\bf x})$ is a regression function and $\varepsilon_\text{n} \sim \mathcal{N}(0,\sigma^2_\text{n})$  is an additive zero-mean Gaussian noise with variance $\sigma^2_\text{n}$.
+This observation noise is assumed to be independent and identically distributed. We set $\sigma_\text{n} = 0$ for noiseless output observations.
+
+A GP assumes that any finite subset of an infinite set of regression function values has a joint Gaussian distribution \cite{Rasmussen2006}.
+This is encoded in the following GP prior:
+%
+\begin{equation}\label{eqn1}
+	f(\cdot) \sim \mathcal{GP} \left(0,\kappa(\cdot,\cdot)\right),
+\end{equation}
+where $\kappa({\bf x},{\bf x}')$ is a positive semi-definite covariance function characterized by several hyperparameters.
+
+By conditioning such prior knowledge on $\mathcal{D}$ and utilizing the observation noise assumption, we can show that the vector of observations $\{y({\bf x}^1),\dots,y({\bf x}^N)\}$ is distributed according to an $N$-variate Gaussian with zero mean and covariance matrix ${\bf C} = {\bf K} + \sigma^2_\text{n} {\bf I}_N$, where the $(i,j)$th element of ${\bf K}$ is $\kappa({\bf x}^i,{\bf x}^j)$ and ${\bf I}_N$ denotes an $N$-by-$N$ identity matrix.
+By further applying the conditional multivariate Gaussian, we obtain the posterior predictive distribution at an unseen input variable vector ${\bf x}^\star$, i.e., $p\left(f({\bf x}^\star)|{\bf x}^\star,\mathcal{D}\right) = \mathcal{N}\left(\mu_\text{f}({\bf x}^\star),\sigma_\text{f}^2({\bf x}^\star)\right)$, which contains the information about the mapping we wish to build. The predictive mean and variance are 
+% 
+\begin{equation}\label{eqn2}
+	\mu_\text{f}({\bf x}^\star)= {\bf K^\star}^\intercal {\bf A}^{-1} {\bf Y},
+\end{equation}
+% 
+\begin{equation}\label{eqn3}
+	\sigma_\text{f}^2({\bf x}^\star)=\kappa({\bf x}^\star,{\bf x}^\star)
+	-{\bf K^\star}^\intercal {\bf C}^{-1} {\bf K^\star},
+\end{equation}
+where
+% 
+\begin{equation}\label{eqn4}
+	{\bf K^\star} = \left[\kappa({\bf x}^\star,{\bf x}^1),\dots,\kappa({\bf x}^\star,{\bf x}^N)\right]^\intercal.
+\end{equation}
+
+\subsection{Sampling from Gaussian Process Posterior}
+
+
+
 \subsection{Bayesian Optimization via Thompson Sampling}
 
 
@@ -223,6 +258,9 @@ Random Fourier features \cite{Rahimi2007}.
 Use of separable kernels \cite{Stegle2011,Hensman2018}.
 
 \section{Bayesian Optimization via Rootfinding}
+
+\subsection{Approximate Sample Paths of GP Posterior}
+
 
 \subsection{Rootfinding for Thompson Sampling}
 
@@ -277,8 +315,6 @@ is a heuristic approach to balancing the exploitation--exploration
 trade-off in BO, it is unnecessary to sample the posterior exactly. If
 exact sampling or a truly Bayesian approach is desirable, one may use a
 Gibbs sampler instead. \cmtR{Consult Yabo.}
-
-\subsection{Approximate Sample Paths of GP Posterior}
 
 The Newton iteration locally attracts any point to its
 projection with quadratic error \cite{Gatilov2014}.
