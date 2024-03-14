@@ -177,7 +177,7 @@ that is optimized instead, to find the next design point. If the GP
 prior can be represented as a Wiener series where the (adaptive) basis
 functions are multivariate polynomials (MVP), the posterior process can
 be sampled by truncating the Wiener series and updating the weights, and
-each sample is a MVP as well. If we can solve all the critical points of
+each sample is an MVP as well. If we can solve all the critical points of
 the sample MVP efficiently, just like solving the roots of a univariate
 polynomial as an eigen-decomposition \cite{Trefethen2019}, then we can
 estimate the posterior distribution of the global optimal point
@@ -243,9 +243,9 @@ where
 
 \subsection{Sampling from Gaussian Process Posterior}
 
-We can sample the GP prior efficiently, if we have a spectral representation of the covariance function $\kappa(\mathbf{x}, \mathbf{x}')$ that converges quickly.
+We can sample the GP prior efficiently if we have a spectral representation of the covariance function $\kappa(\mathbf{x}, \mathbf{x}')$ that converges quickly.
 %By spectral representation, we mean a series of rank-one kernels (aka positive type functions).
-Per the Mercer's theorem on probability spaces
+Per Mercer's theorem on probability spaces
 (see e.g., \cite{Rasmussen2006} Sec 4.3), any positive definite covariance function that is essentially bounded with respect to some probability measure $\mu$ on the domain $\mathcal{X}$ has a spectral representation $\kappa(\mathbf{x}, \mathbf{x}') = \sum_{i=0}^\infty \lambda_i \phi_i(\mathbf{x}) \phi_i(\mathbf{x}')$,
 where $(\lambda_i, \phi_i(\mathbf{x}))$ is a pair of eigenvalue and
 eigenfunction of the kernel integral operator $T_\kappa$ and the
@@ -258,7 +258,7 @@ they are orthonormal in $L^2_\mu(\mathcal{X})$. The covariance
 functions of GP priors commonly used in BO usually
 have a spectral representation known in analytical form.
 Suppose this is the case, we can represent the GP prior using the  Karhunen-Loève (KL) expansion, as  $f(\mathbf{x}) = \sum_{i=0}^{\infty} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$, where  $w_i \overset{\text{iid}}{\sim} \mathcal{N}(0,1)$ are independent standard Gaussian random variables.
-If this representation converges quickly, which we can sample the GP prior by truncating the KL to the first $N$ terms, see \cref{alg:sampriorGP}.
+If this representation converges quickly, we can sample the GP prior by truncating the KL to the first $N$ terms, see \cref{alg:sampriorGP}.
 
 % algorithm: unconditional spectral sampling
 \alglanguage{pseudocode}
@@ -316,7 +316,7 @@ $\mathbf{P}_{\ker(\mathbf{A})} = \mathbf{I}_N - \mathbf{V} \mathbf{V}^\intercal$
 prior weights $\mathbf{w} = (w_i)_{i=1}^N$ is a standard Gaussian
 random vector. With noiseless observations, the posterior weights
 $\widetilde{\mathbf{w}}$ is distributed as the prior distribution
-restricted to set of points satisfying
+restricted to a set of points satisfying
 $\mathbf{f}(\mathbf{w}) = \mathbf{y}$, where
 $\mathbf{f}(\mathbf{w}) := (f(\mathbf{x}^i; \mathbf{w}))_{i=1}^n$ with
 $f(\mathbf{x}; \mathbf{w}) = \sum_{i=0}^{N-1} w_i \sqrt{\lambda_i} \phi_i(\mathbf{x})$.
