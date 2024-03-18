@@ -42,6 +42,7 @@
 \usepackage{mathtools}
 % Custom math commands
 \renewcommand{\d}{\ensuremath{\mathop{}\!\mathrm{d}}} %differential operator: left space, upright.
+\let\hbar\hbarorig   %\hbar
 
 % Pseudo-code packages: `algorithmic`, `algorithmicx`, `algorithm2e`.
 % see: https://tex.stackexchange.com/q/229355/95794
@@ -415,7 +416,7 @@ weights $\mathbf{w} | \mathcal{D}$. Considering that Thompson sampling
 is a heuristic approach to balancing the exploitation--exploration
 trade-off in BO, it is unnecessary to sample the posterior exactly. If
 exact sampling or a truly Bayesian approach is desirable, one may use a
-Gibbs sampler instead. \cmtR{Consult Yabo.}
+Gibbs sampler instead (See \cref{sec:Gibbs}).
 
 The Newton iteration locally attracts any point to its
 projection with quadratic error \cite{Gatilov2014}.
@@ -681,6 +682,255 @@ The error is then defined as $\frac{1}{N_\text{p}^2} \sum_{i=1}^{N_\text{p}} \su
 %$\phi_k(x) = \exp\{-\frac{1}{2}(\alpha^2 - \frac{1}{2}) x_\sigma^2\} \cdot H_k(\alpha x_\sigma)$,
 %where $H_k(x)$ is the $k$th-order Hermite polynomial defined by
 %$H_k(x) := (-1)^k \exp(x^2) \frac{d^k}{dx^k} \exp(-x^2)$.
+
+
+\subsection{Gibbs Sampling of the posterior process}
+\label{sec:Gibbs}
+
+% Section intro.
+Here we discribe a Gibbs sampler for the posterior distribution of the weights $\mathbf{w}$.
+Unlike \Cref{alg:newton} which generates approximate samples from the posterior,
+the Gibbs sampler, as a Markov chain Monte Carlo (MCMC) algorithm,
+is guaranteed to have its sampling distribution converge to the posterior asymptoically.
+It also allows noise in the observations.
+As a trade-off, the computational cost is higher, depending on the number of iterations.
+
+% Prior and observation model.
+Consider the separable Gaussian process prior
+$\mathcal{GP}(0, \sigma_p^2 \prod_{i=1}^d \kappa_i + \epsilon^2 \delta)$,
+with prior variance $\sigma_p^2$,
+correlation function $\kappa_i(x_i, x_i')$ for the $i$th coordinate,
+noise variance $\epsilon^2$,
+and the Kronecker delta function $\delta(\mathbf{x}, \mathbf{x}') = 1(\mathbf{x} = \mathbf{x}')$.
+This GP prior can be seen as as a Bayesian nonlinear model
+$y^k = \prod_{i=1}^d \mathbf{h}_i^{k\intercal} \boldsymbol{\beta}_i + z^k$,
+where features $\mathbf{h}_i^k = (h^k_{i,j})_{j=1}^{N_i}$,
+$h^k_{i,j} = \sqrt{\lambda_{i,j}} \phi_{i,j}(x^k_i)$,
+and observation noise $z^k \overset{\text{iid}}{\sim} \mathcal{N}(0, \epsilon^2)$.
+The weight parameters $\boldsymbol{\beta} = (\boldsymbol{\beta}_i)_{i=1}^d$
+have a prior distribution $\boldsymbol{\beta} \sim \mathcal{N}(0, \sigma_p^2\mathbf{I}_N)$,
+where $N = \sum_{i=1}^d N_i$.
+We assume that the noise variance $\epsilon^2$ is known;
+and for notational purpose, we define $\lambda = \epsilon^2 / \sigma_p^2$
+so that $\sigma_p^2 = \lambda^{-1} \epsilon^2$.
+
+% Posterior.
+Given data $\mathcal{D} = \{(\mathbf{x}^k, y^k)\}_{k=1}^n$,
+denote observation vector $\mathbf{y} = (y^k)_{k=1}^n$.
+Per the Bayes' rule, the posterior distribution of the weights is determined by
+$p(\boldsymbol{\beta} | \mathcal{D}) \propto
+p(\mathbf{y} | \boldsymbol{\beta}) p(\boldsymbol{\beta})$.
+Sampling from this posterior is not trivial,
+but it is easy to sample from the conditional posterior distributions of
+$\boldsymbol{\beta}_i | (\boldsymbol{\beta}_{-i}, \mathcal{D})$
+for $i \in \{1, \cdots, d\}$ where $\boldsymbol{\beta}_{-i} = (\boldsymbol{\beta}_j)_{j \ne i}$.
+
+% Conditional posterior and sampling.
+To see this, define $\overline{h}_{-i}^k = \prod_{j \ne i} \mathbf{h}_j^{k\intercal} \boldsymbol{\beta}_j$,
+$\mathbf{u}_i^k = \overline{h}_{-i}^k \mathbf{h}_i^k$,
+and $\mathbf{U}_i = [\mathbf{u}_i^1 \, \cdots \, \mathbf{u}_i^n] \in \mathbf{R}^{N_i \times n}$,
+then $\mathbf{y} \sim N_n(\mathbf{U}_i^\intercal \boldsymbol{\beta}_i, \epsilon^2 \mathbf{I}_n)$
+for all $i \in \{1, \cdots, d\}$.
+The conditional posterior satisfies
+$p(\boldsymbol{\beta}_i | \boldsymbol{\beta}_{-i}, \mathcal{D}) \propto
+p(\mathbf{y} | \boldsymbol{\beta}) p(\boldsymbol{\beta}_i)$, where
+$p(\mathbf{y} | \boldsymbol{\beta}) \propto \exp\{-\frac{1}{2} \epsilon^{-2}
+  \|\mathbf{y} - \mathbf{U}_i^\intercal \boldsymbol{\beta}_i\|^2\}$ and
+$p(\boldsymbol{\beta}_i) \propto \exp\{-\frac{1}{2} \lambda \epsilon^{-2} \|\boldsymbol{\beta}_i\|^2\}$.
+Expanding and rearranging the terms into a squared form gives
+$p(\boldsymbol{\beta}_i | \boldsymbol{\beta}_{-i}, \mathcal{D}) \propto
+\exp\{-\frac{1}{2} (\boldsymbol{\beta}_i - \mathbf{A}^{-1} \mathbf{b})^\intercal \mathbf{A}
+(\boldsymbol{\beta}_i - \mathbf{A}^{-1} \mathbf{b})\}$ where
+$\mathbf{A} = \epsilon^{-2} (\lambda \mathbf{I}_{N_i} + \mathbf{U}_i \mathbf{U}_i^\intercal)$
+and $\mathbf{b} = \epsilon^{-2} \mathbf{U}_i \mathbf{y}$.
+This means that the conditional posterior is the multivariate Gaussian distribution
+% with mean $\mathbf{A}^{-1} \mathbf{b}$ and covariance $\mathbf{A}^{-1}$:
+$\mathcal{N}_{N_i}(\mathbf{A}^{-1} \mathbf{b}, \mathbf{A}^{-1})$:
+\begin{equation}
+\boldsymbol{\beta}_i | (\boldsymbol{\beta}_{-i}, \mathcal{D})
+\sim \mathcal{N}_{N_i}\left(
+(\lambda \mathbf{I}_{N_i} + \mathbf{U}_i \mathbf{U}_i^\intercal)^{-1} \mathbf{U}_i \mathbf{y},
+\epsilon^2 (\lambda \mathbf{I}_{N_i} + \mathbf{U}_i \mathbf{U}_i^\intercal)^{-1} \right)
+\end{equation}
+A multivariate Gaussian distribution $\mathcal{N}(\mathbf{m}, \mathbf{C})$
+can be sampled as $\mathbf{m} + \mathbf{R} \mathbf{z}$
+where $\mathbf{R}$ is a square root of $\mathbf{C}$
+such that $\mathbf{R} \mathbf{R}^\intercal = \mathbf{C}$
+and $\mathbf{z}$ is a standard Gaussian random vector.
+
+% Gibbs sampling.
+Gibbs sampling generates a new multivariate sample by sampling each group of variables in turn,
+conditional on the current values of the other variables.
+This process is iterated so that the sampling distribution
+converges to the desired joint distribution.
+\Cref{alg:gibbs} gives a procedure to generate a sample from the posterior process.
+
+% Algorithm: gibbs
+\alglanguage{pseudocode}
+\begin{algorithm}[h]
+  \caption{\texttt{gibbs}: Gibbs spectral sampling of a separable posterior stochastic process.}
+  \label{alg:gibbs}
+  \begin{algorithmic}[1] % 0, no line numbering; 1, number every line; n, number every n lines.
+    \Input eigenpairs $\mathcal{S}$, dataset $\mathcal{D}$,
+    noise variance $\epsilon^2$, relative prior precision $\lambda$,
+    stopping criterion $N_{\text{iter}}$
+    \State compute $\mathbf{H}_i \gets [h_{i,j}^k]_{j \in N_i}^{k \in n}$,
+    $h_{i,j} \gets \sqrt{\lambda_{i,j}} \phi_{i,j}(x^k_i)$, for $i = 1, \cdots, d$
+    \State compute thin SVD $\mathbf{H}_i = \mathbf{V}_i \boldsymbol{\Sigma}_i \mathbf{W}_i^\intercal$,
+    for $i = 1, \cdots, d$
+    \State initialize $\boldsymbol{\beta}^{(0)} \gets (\beta_{i,j})_{i \in d}^{j \in N_i}$,
+    $\beta_{i,j} \overset{\text{iid}}{\sim} \mathcal{N}(0, 1)$
+    \State compute $\overline{\mathbf{h}}_i \gets \mathbf{H}_i^\intercal \boldsymbol{\beta}_i$,
+    for $i = 1, \cdots, d$
+    % Options: sample the prior; make a random initial guess; via the deterministic EM algorithm.
+    \For{chain index $t = 1:N_{\text{iter}}$}
+      \State generate a random component order $\pi \gets \mathrm{sample}(d)$
+      \For{cycle index $i = \pi(1:d)$}
+        \State compute SVD
+        $\boldsymbol{\Sigma}_i \mathbf{W}_i^\intercal \diag(\overline{\mathbf{h}}_{-i}) =
+        \mathbf{V}_n \boldsymbol{\Sigma} \mathbf{W}^\intercal$,
+        where $\overline{\mathbf{h}}_{-i} \gets \odot_{j \ne i} \overline{\mathbf{h}}_j$
+        \State compute $\mathbf{s}_1 \gets (\sigma_k / (\sigma_k^2 + \lambda))_{k=1}^n$ and
+        $\mathbf{s}_2 \gets (\sqrt{\lambda / (\sigma_k^2 + \lambda)} - 1)_{k=1}^n$
+        \State initialize $\boldsymbol{\beta}_i \gets (\lambda^{-1} \epsilon^2)^{\frac{1}{2}} \mathbf{z}$,
+        with $\mathbf{z} \sim \mathcal{N}_{N_i}(0, \mathbf{I}_{N_i})$
+        \State update $\boldsymbol{\beta}_i \gets \boldsymbol{\beta}_i + \mathbf{V}_i \mathbf{V}_n
+        [\diag(\mathbf{s}_1) \mathbf{W}^\intercal \mathbf{y} +
+        \diag(\mathbf{s}_2) \mathbf{V}_n^T \mathbf{V}_i^T \boldsymbol{\beta}_i]$
+        % \State sample component $\boldsymbol{\beta}_i \gets G_i(\boldsymbol{\beta}_{-i})$
+        \State update $\overline{\mathbf{h}}_i \gets \mathbf{H}_i^\intercal \boldsymbol{\beta}_i$
+      \EndFor
+      \State $\boldsymbol{\beta}^{(t)} \gets \boldsymbol{\beta}$
+    \EndFor
+    \Output $\boldsymbol{\beta}^{(N_{\text{iter}})}$
+  \end{algorithmic}
+\end{algorithm}
+
+% Overall ideas in reducing the computatonal cost.
+To reduce computational cost, in this algorithm we avoid factorizing order-$N_i$ covariance matrices
+by exploiting its low-rank structure and using thin SVD on $N_i$-by-$n$ matrices instead,
+assuming $n < N_i$.
+To further reduce the cost of repeated SVD in the Gibbs sampler,
+we factorize the matrix and only compute SVD on an order-$n$ matrix.
+
+% Details of analysis.
+Define
+$\overline{h}_i^k = \mathbf{h}_i^{k\intercal} \boldsymbol{\beta}_i$,
+$\overline{\mathbf{h}}_i = (\overline{h}_i^k)_{k=1}^n$, and
+$\mathbf{H}_i = [\mathbf{h}_i^1 \, \cdots \, \mathbf{h}_i^n] \in \mathbf{R}^{N_i \times n}$
+for $i \in \{1, \cdots, d\}$,
+then $\overline{\mathbf{h}}_i = \mathbf{H}_i^\intercal \boldsymbol{\beta}_i$
+and $\mathbf{U}_i = \mathbf{H}_i \diag(\overline{\mathbf{h}}_{-i})$, where
+$\overline{\mathbf{h}}_{-i} = (\overline{h}_{-i}^k)_{k=1}^n = \odot_{j \ne i} \overline{\mathbf{h}}_j$.
+Let $\mathbf{H}_i = \mathbf{V}_i \boldsymbol{\Sigma}_i \mathbf{W}_i^\intercal$ be a thin SVD
+and let $\boldsymbol{\Sigma}_i \mathbf{W}_i^\intercal \diag(\overline{\mathbf{h}}_{-i}) =
+\mathbf{V}_n \boldsymbol{\Sigma} \mathbf{W}^\intercal$ be an SVD.
+Denote $\mathbf{V} = \mathbf{V}_i \mathbf{V}_n$,
+then $\mathbf{U}_i = \mathbf{V} \boldsymbol{\Sigma} \mathbf{W}^\intercal$ is a thin SVD.
+We see that
+\begin{equation*}
+  \lambda \mathbf{I}_{N_i} + \mathbf{U}_i \mathbf{U}_i^\intercal =
+  \lambda \mathbf{I}_{N_i} + \mathbf{V} \boldsymbol{\Sigma}^2 \mathbf{V}^\intercal =
+  [\mathbf{V} \ \mathbf{V}_{\perp}] \diag(\boldsymbol{\sigma}^2 + \lambda \mathbf{1}_n,
+  \lambda \mathbf{1}_{N_i - n}) [\mathbf{V} \ \mathbf{V}_{\perp}]^\intercal,
+\end{equation*}
+where $\mathbf{V}_{\perp}$ is any orthogonal complement of $\mathbf{V}$.
+Furthermore,
+\begin{equation*}
+  (\lambda \mathbf{I}_{N_i} + \mathbf{U}_i \mathbf{U}_i^\intercal)^{-1} =
+  [\mathbf{V} \ \mathbf{V}_{\perp}] \diag\{\left((\sigma_k^2 + \lambda)^{-1}\right)_{k=1}^n,
+  \lambda^{-1} \mathbf{1}_{N_i - n}\} [\mathbf{V} \ \mathbf{V}_{\perp}]^\intercal.
+\end{equation*}
+The posterior mean $\boldsymbol{\mu}_i :=
+(\lambda \mathbf{I}_{N_i} + \mathbf{U}_i \mathbf{U}_i^\intercal)^{-1} \mathbf{U}_i \mathbf{y}$
+can be simplified as
+\begin{equation*}
+  \boldsymbol{\mu}_i =
+  [\mathbf{V} \diag\left((\sigma_k^2 + \lambda)^{-1}\right)_{k=1}^n \mathbf{V}^\intercal +
+  \lambda^{-1} \mathbf{V}_{\perp} \mathbf{V}_{\perp}^\intercal] \mathbf{U}_i \mathbf{y} =
+  \mathbf{V} \diag((\sigma_k^2 + \lambda)^{-1})_{k=1}^n \mathbf{V}^\intercal \mathbf{U}_i \mathbf{y},
+\end{equation*}
+where we used the fact that $\mathbf{U}_i = \mathbf{V} \boldsymbol{\Sigma} \mathbf{W}^\intercal$ and
+$\mathbf{V}_\perp^\intercal \mathbf{V} = \mathbf{0}$.
+Further we have,
+\begin{equation}
+\boldsymbol{\mu}_i = \mathbf{V} \diag((\sigma_k^2 + \lambda)^{-1})_{k=1}^n \mathbf{V}^\intercal
+(\mathbf{V} \boldsymbol{\Sigma} \mathbf{W}^\intercal) \mathbf{y} =
+\mathbf{V} \diag(\sigma_k (\sigma_k^2 + \lambda)^{-1})_{k=1}^n \mathbf{W}^\intercal \mathbf{y}.
+\end{equation}
+
+The symmetric square root of the posterior covariance,
+up to a factor of % the prior standard deviation
+$(\lambda^{-1} \epsilon^2)^{\frac{1}{2}}$, can be written as
+\begin{equation*}
+  (\mathbf{I}_{N_i} + \lambda^{-1} \mathbf{U}_i \mathbf{U}_i^\intercal)^{-\frac{1}{2}} =
+  [\mathbf{V} \ \mathbf{V}_{\perp}] \diag\{\left(\lambda^{-1}\sigma_k^2 + 1\right)_{k=1}^n,
+  \mathbf{1}_{N_i - n}\}^{-\frac{1}{2}} [\mathbf{V} \ \mathbf{V}_{\perp}]^\intercal.
+\end{equation*}
+Moving the square root inside and extracting the identity matrix from the diagonal matrix, we have
+\begin{equation}
+(\mathbf{I}_{N_i} + \lambda^{-1} \mathbf{U}_i \mathbf{U}_i^\intercal)^{-\frac{1}{2}} =
+\mathbf{V} \diag\{[\lambda / (\sigma_k^2 + \lambda)]^{\frac{1}{2}} - 1\}_{k=1}^n
+\mathbf{V}^\intercal + \mathbf{I}_{N_i}.
+\end{equation}
+The conditional posterior $\boldsymbol{\beta}_i | (\boldsymbol{\beta}_{-i}, \mathcal{D})$
+is sampled as $\boldsymbol{\beta}_i = \boldsymbol{\mu}_i +
+(\mathbf{I}_{N_i} + \lambda^{-1} \mathbf{U}_i \mathbf{U}_i^\intercal)^{-\frac{1}{2}}
+\mathring{\boldsymbol{\beta}}_i$,
+where $\mathring{\boldsymbol{\beta}}_i \sim \mathcal{N}(0, \lambda^{-1} \epsilon^2 \mathbf{I}_{N_i})$
+is a sample from the prior.
+
+% Computatonal complexity.
+The computatonal complexity of \Cref{alg:gibbs} is dominated by:
+(1) the one-off cost of the initial thin SVDs, with a total of $\mathcal{O}(N n^2)$ flops, and
+(2) the Markov chain iteratioins, with $\mathcal{O}(d n^3)$ flops for the SVDs
+and about $4 N n$ flops for the matrix-vector products in each iteration.
+MCMC algorithms are usually run for a large number of iterations $N_{\text{iter}}$,
+with some number of initial samples ignored
+and the remaining samples periodically subsampled for inference.
+For Thompson sampling, here we only need a single sample;
+to reduce cost we may stop the Markov chain iterations before it becomes numerically stationary.
+Depending on the problem and the value of $N_{\text{iter}}$,
+the Gibbs sampler may be one or a few orders of magnitude slower
+than the Newton's method in \Cref{alg:newton},
+which costs about $2 N n^2$ flops per iteration and typically stops in six iterations.
+
+\subsection{Further speedup during Bayesian optimization}
+% Notes on further speedups.
+
+During Bayesian optimization iteration,
+if the eigenpairs $\mathcal{S}$ are unchanged between consecutive steps,
+in the Gibbs sampler we can reuse the SVD results of $\mathbf{H}_i$
+via rank-one updates \cite{Brand2006}.
+This reduces the cost from $\mathcal{O}(N n^2)$ to $\mathcal{O}(N n)$.
+
+In \texttt{newton()}, the Jacobian can be written as
+$\mathbf{J}^\intercal = \diag(\mathbf{H}_i)_{i=1}^d [\diag^{-1}(\mathbf{f}_i)]_{i=1}^d \diag(\mathbf{f})$,
+where $\mathbf{f}_i(\mathbf{w}_i) = (f_i(x_i^k; \mathbf{w}_i))_{k=1}^n$
+and $\mathbf{f}(\mathbf{w}) = \odot_{i=1}^d \mathbf{f}_i(\mathbf{w}_i)$.
+In computing the pseudoinverse as
+$\mathbf{J}^\dagger = \mathbf{J}^\intercal (\mathbf{J} \mathbf{J}^\intercal)^{-1}$,
+the gram matrix can be written as
+\begin{equation*}
+  \mathbf{J} \mathbf{J}^\intercal =
+  \sum_{i=1}^d \diag(\mathbf{f}) \diag^{-1}(\mathbf{f}_i) (\mathbf{H}_i^\intercal \mathbf{H}_i)
+  \diag^{-1}(\mathbf{f}_i) \diag(\mathbf{f}).
+\end{equation*}
+During the Newton iteration, we can reuse $\mathbf{H}_i^\intercal \mathbf{H}_i$
+and obtain $\mathbf{J} \mathbf{J}^\intercal$ in $\mathcal{O}(d n^2)$ flops.
+This reduces the cost in each iteration from $\mathcal{O}(N n^2)$ to $\mathcal{O}(d n^2 + n^3 + N n)$,
+with a one-off cost of about $2 N n^2$ flops.
+If the eigenpairs are unchanged between consecutive steps of the Bayesian optimization,
+the gram matrices $\mathbf{H}_i^\intercal \mathbf{H}_i$ can be updated by adding a row
+(and symmetrically, a column) at the end:
+let $\mathbf{H}_i^{(n+1)} = [\mathbf{h}_i^1 \, \cdots \, \mathbf{h}_i^{n+1}]$,
+then $\mathbf{H}_i^{(n+1)\intercal} \mathbf{H}_i^{(n+1)} = \begin{bmatrix}
+\mathbf{H}_i^{(n)\intercal} \mathbf{H}_i^{(n)} & \mathbf{H}_i^{(n)\intercal} \mathbf{h}_i^{n+1} \\
+\mathbf{h}_i^{n+1\intercal} \mathbf{H}_i^{(n)} & \mathbf{h}_i^{n+1\intercal} \mathbf{h}_i^{n+1}
+\end{bmatrix}$.
+This further reduces the one-off cost to about $2 N n$ flops.
+% NOTE: This gives an up to six-fold speedup to an already fast algorithm.
+
 
 \section{Misc: Chebyshev Polynomial-based Spectral Representation
   for BO on the Hypercube}
