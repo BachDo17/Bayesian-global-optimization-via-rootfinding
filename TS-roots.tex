@@ -670,10 +670,11 @@ The error is then defined as $\frac{1}{N_\text{p}^2} \sum_{i=1}^{N_\text{p}} \su
 
 \subsection{Learning the hyperparameters}
 \label{sec:hyperparameters}
-We learn the output variance $\sigma^2_\text{p}$, length scales $l_i$ (or equivalently the parameters $\rho_i$), and noise variance $\sigma^2$ by maximizing the following marginal likelihood functions:
+We learn the output variance $\sigma^2_\text{p}$, length scales $l_i$ (or equivalently the parameters $\rho_i$), and noise variance $\sigma^2$ by maximizing the marginal likelihood function.
+This is equivalent to minimizing the following negative log marginal likelihood function.
 
 \begin{equation}\label{}
-	\mathcal{L} = \frac{1}{2} \log |{\bf C}| + \frac{1}{2} {\bf y}^\intercal {\bf C}^{-1} {\bf y} +\frac{n}{2} \log(2 \pi) 
+	\mathcal{L} = \frac{1}{2} \log |{\bf C}| + \frac{1}{2} {\bf y}^\intercal {\bf C}^{-1} {\bf y} +\frac{n}{2} \log(2 \pi). 
 \end{equation}
 
 For our approximation scheme, we replace ${\bf C}$ with $\widetilde{\bf C}$, where the elements of $\widetilde{\bf C}$ read $\sigma^2_\text{p} \prod_{i=1}^{d} \sum_{k=0}^{N_i-1} \lambda_k (\rho_i) \phi_k(x_i;\rho_i) \phi_k(x'_i;\rho_i) + \sigma^2$.
